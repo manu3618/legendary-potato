@@ -47,4 +47,3 @@ def periodic(x1, x2, period=2*np.pi):
     """Kernel based on periodic map.
     """
     return from_feature_map(periodic_map, period)(x1, x2)
-
