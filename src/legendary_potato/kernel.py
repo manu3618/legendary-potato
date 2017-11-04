@@ -21,8 +21,8 @@ def from_feature_map(mapping, *args, **kwargs):
 
     /!\ this function overwrite the kernel.
     """
-    return lambda x1, x2: np.dot(mapping(x1, args, kwargs),
-                                 mapping(x2, args, kwargs))
+    return lambda x1, x2: np.dot(mapping(x1, *args, **kwargs),
+                                 mapping(x2, *args, **kwargs))
 
 
 def all_subset(set1, set2):
@@ -32,3 +32,19 @@ def all_subset(set1, set2):
     """
     subsets1 = _subsets(set1)
     return len(ele for ele in _subsets(set2) if ele in subsets1)
+
+
+def periodic_map(x, period=2*np.pi):
+    """Feature map for periodic features.
+
+    Map onto a circle.
+    """
+    x = 2 * np.pi * x / period
+    return (np.cos(x), np.sin(x))
+
+
+def periodic(x1, x2, period=2*np.pi):
+    """Kernel based on periodic map.
+    """
+    return from_feature_map(periodic_map, period)(x1, x2)
+
