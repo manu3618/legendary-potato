@@ -15,10 +15,7 @@ class PotatoUtils():
         >>> potato(sample[i], sample[j])
         """
         self.potato = potato
-        if sample is not None:
-            self.sample = sample
-        else:
-            self.sample = {}
+        self.sample = sample
 
     def matrix(self, sample=None, ix=None):
         """Return the kernel matrix.
@@ -30,12 +27,16 @@ class PotatoUtils():
             will be consumed many times.
         """
         if sample is None and self.sample is None:
-            raise RuntimeError("No sample to build the matrix")
+            raise RuntimeError("No sample to build the matrix.")
         if sample is not None and self.sample is None:
-            self.sample = sample.copy()
+            # consume iterator/generator or copy input
+            self.sample = tuple(tr_s for tr_s in sample)
 
         sample = self.sample
         dim = len(sample)
+        if dim == 0:
+            raise ValueError("Zero sample provided.")
+
         if ix is None:
             ix = (list(range(dim)), list(range(dim)))
 
