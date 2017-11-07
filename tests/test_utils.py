@@ -71,7 +71,7 @@ def kernel_samples(kernel_name):
 
 
 @pytest.mark.parametrize(('kernel', 'sample'), kernel_sample_iterator())
-def test_matrix(kernel, sample, tol=1e-15):
+def test_matrix(kernel, sample):
     """Regression test on gram matrix.
 
     Construct the Gram matrix for the kernel and the samples and compare it
@@ -79,7 +79,6 @@ def test_matrix(kernel, sample, tol=1e-15):
 
     kernel -- the potato kernel to test
     sample -- the sample to construct the Gram matrix
-    tol -- tolerance for pointing float errors
     """
     kernel_name = kernel.__name__  # TODO: find a more feng shui way
     matrix_path = os.path.join(GRAMMATRIX_PATH, kernel_name + '.csv')
@@ -89,8 +88,10 @@ def test_matrix(kernel, sample, tol=1e-15):
         test_matrix = pd.DataFrame().from_csv(matrix_path,
                                               header=None,
                                               index_col=False)
-        results = np.array(test_matrix, dtype=cur_matrix.dtype) - cur_matrix
-        assert (np.abs(results) < tol).all()
+        np.testing.assert_allclose(
+            np.array(test_matrix, dtype=cur_matrix.dtype),
+            cur_matrix
+        )
 
     else:
         with suppress(FileExistsError):
