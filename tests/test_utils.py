@@ -85,9 +85,7 @@ def test_matrix(kernel, sample):
     potato_util = legendary_potato.utils.PotatoUtils(kernel)
     cur_matrix = potato_util.matrix(tr_s for _, tr_s in sample)
     if os.path.exists(matrix_path):
-        test_matrix = pd.DataFrame().from_csv(matrix_path,
-                                              header=None,
-                                              index_col=False)
+        test_matrix = pd.read_csv(matrix_path, header=None, index_col=False)
         np.testing.assert_allclose(
             np.array(test_matrix, dtype=cur_matrix.dtype),
             cur_matrix
