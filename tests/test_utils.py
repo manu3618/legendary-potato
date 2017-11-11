@@ -95,3 +95,13 @@ def test_matrix(kernel, sample):
         with suppress(FileExistsError):
             os.makedirs(GRAMMATRIX_PATH)
         pd.DataFrame(cur_matrix).to_csv(matrix_path, header=None, index=None)
+
+
+def test_empty_matrix():
+    """matrix() raises expected errors.
+    """
+    potato_util = legendary_potato.utils.PotatoUtils(None)
+    with pytest.raises(RuntimeError):
+        potato_util.matrix()
+    with pytest.raises(ValueError):
+        potato_util.matrix([])
