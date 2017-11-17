@@ -4,13 +4,16 @@ from contextlib import suppress
 import numpy as np
 import pandas as pd
 import pytest
+import yaml
 
+import legendary_potato.composition
 import legendary_potato.kernel
 import legendary_potato.utils
 
 TEST_PATH = os.path.join(os.path.abspath(os.path.curdir))
 SAMPLE_PATH = os.path.join(TEST_PATH, 'sample')
 GRAMMATRIX_PATH = os.path.join(TEST_PATH, 'gram_matrix')
+COMPOSITION_FILE = os.path.join(TEST_PATH, 'composition.yaml')
 
 
 def kernel_sample_iterator():
@@ -26,6 +29,14 @@ def kernel_iterator():
     """
     for kern_name in os.listdir(SAMPLE_PATH):
         yield legendary_potato.kernel.__dict__.get(kern_name)
+
+
+def composition_iterator(filename=COMPOSITION_FILE):
+    """Return an iterator over possible kernel composition from file.
+    """
+    with open(filename, 'r') as fd:
+        ret = list(yaml.load_all(fd))
+    return ret[0].items()
 
 
 def kernel_samples(kernel_name):
@@ -105,3 +116,27 @@ def test_empty_matrix():
         potato_util.matrix()
     with pytest.raises(ValueError):
         potato_util.matrix([])
+
+
+@pytest.mark.parametrize(('kernel', 'sample'), kernel_sample_iterator())
+@pytest.mark.parametrize(('composition', 'args'), composition_iterator())
+def test_composition(kernel, sample, composition, args):
+    """Build kernel composition and test it on the sample file and test matix.
+
+    Test the matrix is a kernel matrix.
+    """
+    compo = legendary_potato.composition.__dict__.get(composition)
+    if args:
+        for arg_set in args:
+            new_kern = compo(kernel, arg_set)
+            potato_util = legendary_potato.utils.PotatoUtils(new_kern)
+            mat = potato_util.matrix(tr_s for _, tr_s in sample)
+    else:
+        new_kern = compo(kernel)
+        potato_util = legendary_potato.utils.PotatoUtils(new_kern)
+        mat = potato_util.matrix(tr_s for _, tr_s in sample)
+
+    assert (
+        np.all(np.linalg.eigvals(mat) > 0)
+        or np.isclose([np.min(np.linalg.eigvals(mat))], [0])
+    )
