@@ -125,7 +125,9 @@ def test_composition(kernel, sample, composition, args):
 
     Test the matrix is a kernel matrix.
     """
+    sample = [ele for ele in sample]  # cunsumed several times
     compo = legendary_potato.composition.__dict__.get(composition)
+
     if args:
         for arg_set in args:
             new_kern = compo(kernel, arg_set)
