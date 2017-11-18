@@ -15,8 +15,13 @@ def normalize(kernel, *args, **kwargs):
     .. math::
     \Phi(x) = \frac{\phi(x)}{\|\phi(x)\|}
     """
-    return lambda x1, x2: (
-        kernel(x1, x2, *args, **kwargs)
-        / np.sqrt(kernel(x1, x1, *args, **kwargs)
-                  * kernel(x2, x2, *args, **kwargs))
-    )
+    def normalized_kernel(x1, x2, *args, **kwargs):
+        """actual kernel to return"""
+        denom = np.sqrt(kernel(x1, x1, *args, **kwargs)
+                        * kernel(x2, x2, *args, **kwargs))
+        if denom == 0:
+            return 0
+        else:
+            return kernel(x1, x2, *args, **kwargs) / denom
+
+    return normalized_kernel
