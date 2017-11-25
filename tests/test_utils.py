@@ -125,7 +125,7 @@ def test_composition(kernel, sample, composition, args):
 
     Test the matrix is a kernel matrix.
     """
-    sample = [ele for ele in sample]  # cunsumed several times
+    sample = [ele for ele in sample]  # consumed several times
     compo = legendary_potato.composition.__dict__.get(composition)
 
     if args:
