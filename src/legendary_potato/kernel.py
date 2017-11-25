@@ -3,6 +3,12 @@
 from itertools import combinations
 import numpy as np
 
+try:
+    import scipy.integrate
+except ImportError:
+    # TODO: display warning
+    scipy.integrate = None
+
 
 def _subsets(set0):
     """Return all subsets of set0"""
@@ -46,6 +52,18 @@ def periodic(x1, x2, period=2*np.pi):
     """Kernel based on periodic map.
     """
     return from_feature_map(periodic_map, period)(x1, x2)
+
+
+def l2(f1, f2, interval=(-1, 1)):
+    """Kernel on functions square-integrable on interval.
+
+    The result is:
+    .. math:
+    K(f_1, f_2) = \int_{interval} f_1(x) f_2(x) dx
+    """
+    return scipy.integrate.quad(lambda x: f1(x) * f2(x),
+                                interval[0],
+                                interval[1])[0]
 
 
 def matrix_weighted(x1, x2, matrix=None):
