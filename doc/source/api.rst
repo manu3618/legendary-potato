@@ -1,5 +1,8 @@
 Detailed  api
 =============
 
-.. automodule:: legendary_potato
+Kernels
+-------
+
+.. automodule:: legendary_potato.kernel
   :members:
