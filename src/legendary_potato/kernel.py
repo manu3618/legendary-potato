@@ -21,9 +21,9 @@ def from_feature_map(mapping, *args, **kwargs):
     """Define a kernel from a feature map.
 
     The mapping is the feature map function $\phi$ such that:
-    \[
-    K: (x_1, x_2) \mapsto <\phi(x_1), \phi(x_2)>
-    \]
+    .. math::
+        K: (x_1, x_2) \mapsto <\phi(x_1), \phi(x_2)>
+
     define the kernel.
     """
     return lambda x1, x2: np.dot(mapping(x1, *args, **kwargs).transpose(),
@@ -58,8 +58,9 @@ def l2(f1, f2, interval=(-1, 1)):
     """Kernel on functions square-integrable on interval.
 
     The result is:
-    .. math:
-    K(f_1, f_2) = \int_{interval} f_1(x) f_2(x) dx
+    .. math::
+        K(f_1, f_2) = \int_{interval} f_1(x) f_2(x) dx
+
     """
     return scipy.integrate.quad(lambda x: f1(x) * f2(x),
                                 interval[0],

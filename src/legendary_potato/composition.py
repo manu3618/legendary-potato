@@ -13,7 +13,7 @@ def normalize(kernel, *args, **kwargs):
 
     This is equivalent to normalize the feature map:
     .. math::
-    \Phi(x) = \frac{\phi(x)}{\|\phi(x)\|}
+        \Phi(x) = \frac{\phi(x)}{\|\phi(x)\|}
     """
     def normalized_kernel(x1, x2, *args, **kwargs):
         """actual kernel to return"""

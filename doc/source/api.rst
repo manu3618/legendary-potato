@@ -15,3 +15,9 @@ Utils
 
 .. automodule:: legendary_potato.utils
   :members:
+
+Classifiers
+-----------
+
+.. automodule:: legendary_potato.classifiers
+  :members:
