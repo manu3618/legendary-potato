@@ -72,11 +72,12 @@ def matrix_weighted(x1, x2, matrix=None):
 
     If no matrix is provided, the identity matrix is used
 
-    .. math:
-    K(x_1, x_2) = x_1 matrix x_2^T
+    .. math::
+        K(x_1, x_2) = x_1 matrix x_2^T
 
-    x1 -- a 1 dimensional ndarray
-    x2 -- a 1 dimensional ndarray with the same shape as x1
+        x1 -- a 1 dimensional ndarray
+        x2 -- a 1 dimensional ndarray with the same shape as x1
+
     """
     if matrix is None:
         matrix = np.identity(len(x1))
