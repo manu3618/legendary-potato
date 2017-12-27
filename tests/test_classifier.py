@@ -2,6 +2,7 @@ import pytest
 
 import numpy as np
 from sklearn.utils.estimator_checks import check_estimator
+from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import train_test_split
 
 import legendary_potato.classifiers as classifiers
@@ -10,10 +11,10 @@ import legendary_potato.classifiers as classifiers
 def classifier_iterator():
     """Return an iterator over classifier.
     """
-    return (classifiers.svdd,)
+    return (classifiers.SVDD,)
 
 
-def two_class_generator(random_state=1576):
+def two_class_generator(random_state=1576, dims=(1, 10)):
     """Generate classic multidimensional toy set.
 
     For each label, a set of centers are generated following normal
@@ -21,9 +22,11 @@ def two_class_generator(random_state=1576):
     centered on this centers.
 
     The generated set is a 2-class balanced dataset.
+
+    dims -- tuple indicating smallest and highest dimension tests
     """
     np.random.seed = random_state
-    for dim in range(1, 10):
+    for dim in range(*dims):
         orig = np.zeros(dim)
         orig[0] = -1
         a_centers = np.random.normal(orig, 2, size=(3, dim))
@@ -45,13 +48,6 @@ def two_class_generator(random_state=1576):
 
 
 @pytest.mark.parametrize('classifier', classifier_iterator())
-def test_sklearn_compatibility(classifier):
-    """Check the compatibility.
-    """
-    check_estimator(classifier)
-
-
-@pytest.mark.parametrize('classifier', classifier_iterator())
 @pytest.mark.parametrize('dataset', two_class_generator())
 def test_oneclass(classifier, dataset):
     """Perform one class classification.
@@ -62,3 +58,23 @@ def test_oneclass(classifier, dataset):
     classif = classifier()
     classif.fit(X_train, y_train)
     classif.predict(X_test)
+
+
+@pytest.mark.parametrize('classifier', classifier_iterator())
+@pytest.mark.parametrize('dataset', two_class_generator())
+def test_twoclasses(classifier, dataset):
+    """Perform one class classification.
+    """
+    X, y = dataset
+    X_train, X_test, y_train, y_test = train_test_split(X, y, shuffle=False)
+    classif = classifier()
+    classif.fit(X_train, y_train)
+    y_pred = classif.predict(X_test)
+    confusion_matrix(y_test, y_pred)
+
+
+@pytest.mark.parametrize('classifier', classifier_iterator())
+def test_sklearn_compatibility(classifier):
+    """Check the compatibility.
+    """
+    check_estimator(classifier)
