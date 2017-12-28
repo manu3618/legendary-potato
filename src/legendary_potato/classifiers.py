@@ -19,16 +19,14 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
         s.t.        y_i \| \phi(x_i) -c \| < r^2 + xi_i \forall i
                     xi_i > 0                            \forall i
     """
-    def __init__(self, kernel_matrix=None, kernel=None, C_=None):
+    def __init__(self, kernel_matrix=None, kernel=None, C=None):
         """Initialize some parameters.
 
         Those parameters may be overwritten by the fit() method.
         """
         self.kernel_matrix = kernel_matrix  # kernel matrix used for training
-        self.kernel_ = kernel
-        self.alphas_ = None
-        self.radius_ = None
-        self.C_ = C_
+        self.kernel = kernel
+        self.C = C
 
     def fit(self, X, y, C=None, kernel=None, is_kernel_matrix=False,
             *args, **kwargs):
@@ -54,7 +52,7 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
                              "received %s" % int(len(self.classes_)))
         self.X_ = X
         self.y_ = np.sign(y)
-        self.C_ = C
+        self.C = C
         return self
 
     def predict(self, X, kernel=None):
@@ -91,10 +89,9 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
         # \forall i \alpha[i] \geq 0 \leftrightdoublearrow min(\alpha) \geq 0
         cons = [{'type': 'eq',   'fun': lambda alphas: np.sum(alphas) - 1},
                 {'type': 'ineq', 'fun': lambda alphas: np.min(alphas)}]
-        if self.C_:
-            # soft margin case:
-            # \forall i \alpha[i] \leq C
+        if self.C:
+            # soft margin case: \forall i \alpha[i] \leq C
             cons.append({'type': 'ineq',
-                         'fun': lambda alphas: self.C_ - np.max(alphas)})
+                         'fun': lambda alphas: self.C - np.max(alphas)})
 
         self.alphas_ = minimize(ell_d, alphas, contraints=tuple(cons))
