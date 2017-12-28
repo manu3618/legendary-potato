@@ -3,7 +3,7 @@
 import numpy as np
 
 
-class PotatoUtils():
+class KernelMethod():
     """Kernel utils."""
 
     def __init__(self, potato, sample=None):

@@ -3,7 +3,7 @@ import pytest
 
 import legendary_potato.composition
 import legendary_potato.kernel
-import legendary_potato.utils
+from legendary_potato.methods import KernelMethod
 
 from .complex_samples import KERNEL_SAMPLES
 
@@ -14,8 +14,8 @@ def test_kernel_matrix(kernel, sample):
     """
     sample = [ele for ele in sample]  # consumed several times
 
-    potato_util = legendary_potato.utils.PotatoUtils(kernel)
-    mat = potato_util.matrix(sample)
+    potato = KernelMethod(kernel)
+    mat = potato.matrix(sample)
     assert (
         np.all(np.linalg.eigvals(mat) > 0)
         or np.isclose([np.min(np.linalg.eigvals(mat))], [0])

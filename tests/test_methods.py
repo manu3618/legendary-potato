@@ -8,7 +8,7 @@ import yaml
 
 import legendary_potato.composition
 import legendary_potato.kernel
-import legendary_potato.utils
+from legendary_potato.methods import KernelMethod
 
 from .common import TEST_PATH, kernel_sample_iterator
 
@@ -37,7 +37,7 @@ def test_matrix(kernel, sample):
     """
     kernel_name = kernel.__name__  # TODO: find a more feng shui way
     matrix_path = os.path.join(GRAMMATRIX_PATH, kernel_name + '.csv')
-    potato_util = legendary_potato.utils.PotatoUtils(kernel)
+    potato_util = KernelMethod(kernel)
     cur_matrix = potato_util.matrix(tr_s for _, tr_s in sample)
     if os.path.exists(matrix_path):
         test_matrix = pd.read_csv(matrix_path, header=None, index_col=False)
@@ -55,7 +55,7 @@ def test_matrix(kernel, sample):
 def test_empty_matrix():
     """matrix() raises expected errors.
     """
-    potato_util = legendary_potato.utils.PotatoUtils(None)
+    potato_util = KernelMethod(None)
     with pytest.raises(RuntimeError):
         potato_util.matrix()
     with pytest.raises(ValueError):
@@ -75,11 +75,11 @@ def test_composition(kernel, sample, composition, args):
     if args:
         for arg_set in args:
             new_kern = compo(kernel, arg_set)
-            potato_util = legendary_potato.utils.PotatoUtils(new_kern)
+            potato_util = KernelMethod(new_kern)
             mat = potato_util.matrix(tr_s for _, tr_s in sample)
     else:
         new_kern = compo(kernel)
-        potato_util = legendary_potato.utils.PotatoUtils(new_kern)
+        potato_util = KernelMethod(new_kern)
         mat = potato_util.matrix(tr_s for _, tr_s in sample)
 
     assert (
