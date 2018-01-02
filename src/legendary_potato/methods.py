@@ -6,15 +6,15 @@ import numpy as np
 class KernelMethod():
     """Kernel utils."""
 
-    def __init__(self, potato, sample=None):
+    def __init__(self, kernel, sample=None):
         """
-        potato -- the kernel
+        kernel -- the kernel
         sample -- a list or tuple of sample
 
         the kernel must be callable by:
-        >>> potato(sample[i], sample[j])
+        >>> kernel(sample[i], sample[j])
         """
-        self.potato = potato
+        self.kernel = kernel
         self.sample = sample
 
     def matrix(self, sample=None, ix=None):
@@ -40,15 +40,15 @@ class KernelMethod():
         if ix is None:
             ix = (list(range(dim)), list(range(dim)))
 
-        return np.array([[self.potato(sample[i], sample[j]) for i in ix[0]]
+        return np.array([[self.kernel(sample[i], sample[j]) for i in ix[0]]
                          for j in ix[1]])
 
     def _square_dist(self, s0, s1):
         """Used by distance.
         """
-        return (self.potato(s0, s0)
-                + self.potato(s1, s1)
-                - 2 * self.potato(s0, s1))
+        return (self.kernel(s0, s0)
+                + self.kernel(s1, s1)
+                - 2 * self.kernel(s0, s1))
 
     def distance(self, sample0=None, sample1=None):
         """Compute squarenorm.
@@ -81,8 +81,8 @@ class KernelMethod():
 
     def _cosine(self, s1, s2):
         """used by cosine"""
-        num = self.potato(s1, s2)
-        denom = np.sqrt(self.potato(s1, s1)) * np.sqrt(self.potato(s2, s2))
+        num = self.kernel(s1, s2)
+        denom = np.sqrt(self.kernel(s1, s1)) * np.sqrt(self.kernel(s2, s2))
         if num == 0:
             return 0
         else:

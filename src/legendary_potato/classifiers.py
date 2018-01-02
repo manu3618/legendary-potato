@@ -1,5 +1,5 @@
 '''
-Calissifiers
+Classifiers.
 '''
 import numpy as np
 
