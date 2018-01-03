@@ -1,7 +1,8 @@
 "Generic kernels."
 
-from itertools import combinations
 import numpy as np
+from datetime import datetime
+from itertools import combinations
 
 try:
     import scipy.integrate
@@ -52,6 +53,41 @@ def periodic(x1, x2, period=2*np.pi):
     """Kernel based on periodic map.
     """
     return from_feature_map(periodic_map, period)(x1, x2)
+
+
+def temporal_map(ts):
+    """Feature map for mining human-based temporal behavior.
+
+    Map onto several periodic map with periods usually used by humans.
+    """
+    ret = []
+    periods = (
+        1,
+        60,
+        60 * 60,
+        60 * 60 * 7,
+        60 * 60 * 7 * 365.24 / 12,
+        60 * 60 * 7 * 365.24,
+    )
+    datespec = datetime.utcfromtimestamp(ts)
+    extraspecs = [
+        (datespec.seconds, 60),
+        (datespec.minute, 60),
+        (datespec.hour, 24),
+        (datespec.weekday, 7),
+        (datespec.day, 31),
+        (datespec.month, 12),
+    ]
+    ret = [coord for per in periods for coord in periodic_map(ts, per)]
+    ret.extend([coord for value, period in extraspecs
+                for coord in periodic_map(value, period)])
+    return np.array(ret)
+
+
+def temporal(ts1, ts2):
+    """Kernel based on temporal map.
+    """
+    return from_feature_map(temporal_map)(ts1, ts2)
 
 
 def l2(f1, f2, interval=(-1, 1)):
