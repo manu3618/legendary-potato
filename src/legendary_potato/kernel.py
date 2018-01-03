@@ -1,8 +1,9 @@
 "Generic kernels."
 
 import numpy as np
+from calendar import monthrange
 from datetime import datetime
-from itertools import combinations
+from itertools import chain, combinations
 
 try:
     import scipy.integrate
@@ -27,8 +28,8 @@ def from_feature_map(mapping, *args, **kwargs):
 
     define the kernel.
     """
-    return lambda x1, x2: np.dot(mapping(x1, *args, **kwargs).transpose(),
-                                 mapping(x2, *args, **kwargs))[0, 0]
+    return lambda x1, x2: float(np.dot(mapping(x1, *args, **kwargs).T,
+                                       mapping(x2, *args, **kwargs)))
 
 
 def all_subset(set1, set2):
@@ -60,28 +61,30 @@ def temporal_map(ts):
 
     Map onto several periodic map with periods usually used by humans.
     """
-    ret = []
     periods = (
         1,
         60,
         60 * 60,
-        60 * 60 * 7,
-        60 * 60 * 7 * 365.24 / 12,
-        60 * 60 * 7 * 365.24,
+        60 * 60 * 24,
+        60 * 60 * 24 * 7,
+        60 * 60 * 24 * 7 * 365.2425 / 12,
+        60 * 60 * 24 * 7 * 365.2425,
     )
     datespec = datetime.utcfromtimestamp(ts)
     extraspecs = [
-        (datespec.seconds, 60),
+        (datespec.second, 60),
         (datespec.minute, 60),
         (datespec.hour, 24),
-        (datespec.weekday, 7),
+        (datespec.weekday(), 7),
         (datespec.day, 31),
+        (datespec.day, monthrange(datespec.year, datespec.month)[1]),
         (datespec.month, 12),
     ]
-    ret = [coord for per in periods for coord in periodic_map(ts, per)]
-    ret.extend([coord for value, period in extraspecs
-                for coord in periodic_map(value, period)])
-    return np.array(ret)
+    return np.hstack(chain(
+        [coord for per in periods for coord in periodic_map(ts, per)],
+        [coord for value, period in extraspecs
+         for coord in periodic_map(value, period)]
+    ))
 
 
 def temporal(ts1, ts2):
