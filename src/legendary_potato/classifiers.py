@@ -5,7 +5,6 @@ import numpy as np
 
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.utils.validation import check_X_y, check_array, check_is_fitted
-from sklearn.utils.multiclass import unique_labels
 from scipy.optimize import minimize
 
 from .methods import KernelMethod
@@ -54,7 +53,7 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
                 self.kernel = np.dot
             self.sample = self.X_
             self.kernel_matrix = self.matrix()
-        self.classes_ = unique_labels(y)
+        self.classes_ = np.unique(y)
 
         if len(self.classes_) > 2:
             # TODO implement multiclass
