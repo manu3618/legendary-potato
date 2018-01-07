@@ -53,11 +53,10 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
 
         if np.isreal(y[0]):
             self.string_labels = True
-        if len(self.classes_) > 2:
-            # TODO implement multiclass
-            msg = ("Expected at most 2 classes, "
-                   "received {} classes".format(str(len(self.classes_))))
-            print(msg)
+        if (len(self.classes_) > 2) or (len(self.classes_) == 2
+                                        and self.string_labels):
+            # each class has its own hypersphere (one class vs rest)
+            # TODO
             self.ys_ = {
                 cl: np.array([1 if y[i] == cl else -1 for i in range(dim)])
                 for cl in self.classes_
