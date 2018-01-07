@@ -26,6 +26,7 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
         self.kernel_matrix = kernel_matrix  # kernel matrix used for training
         self.kernel = kernel
         self.C = C
+        self.string_labels = False          # are labels stings or int?
 
     def fit(self, X, y, C=None, kernel=None, is_kernel_matrix=False,
             *args, **kwargs):
@@ -37,15 +38,10 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
         is_kernel_matrix -- if true, the input is  treated as a kernel matrix
         *args, **kwargs -- extra arguments for kernel function
         """
-        # TODO
-        if (y > np.zeros(len(y))).all():
-            # One class
-            dim = X.shape[0]
-            y = np.ones(dim, dtype=int)
-
         X, y = check_X_y(X, y)
         self.X_ = X
         self.C = C
+        dim = len(y)
         if is_kernel_matrix:
             self.kernel_matrix = kernel
         else:
@@ -55,10 +51,22 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
             self.kernel_matrix = self.matrix()
         self.classes_ = np.unique(y)
 
+        if np.isreal(y[0]):
+            self.string_labels = True
         if len(self.classes_) > 2:
             # TODO implement multiclass
-            raise ValueError("Expected at most 2 classes, "
-                             "received %s" % int(len(self.classes_)))
+            msg = ("Expected at most 2 classes, "
+                   "received {} classes".format(str(len(self.classes_))))
+            print(msg)
+            self.ys_ = {
+                cl: np.array([1 if y[i] == cl else -1 for i in range(dim)])
+                for cl in self.classes_
+            }
+            self.alphas_ = {}
+            self.radius_ = {}
+            for cl in self.classes_:
+                alphas, radius = self._fit_two_classes(self.ys_[cl])
+                self.alphas_[cl], self.radius_[cl] = alphas, radius
         else:
             # one or two classes
             self.y_ = np.sign(y)
@@ -106,6 +114,7 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
             cons.append({'type': 'ineq',
                          'fun': lambda alphas: self.C - np.max(alphas)})
         predicted_alphas = minimize(ell_d, alphas, constraints=tuple(cons))
+        radius = 0  # TODO
         if len(self.classes_) < 3:
             self.alphas_ = predicted_alphas
-        return predicted_alphas
+        return radius, predicted_alphas
