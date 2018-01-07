@@ -1,3 +1,5 @@
+from itertools import product
+
 import pytest
 
 import numpy as np
@@ -47,6 +49,28 @@ def two_class_generator(random_state=1576, dims=(1, 10)):
         yield data[:, 0:-1], data[:, -1]
 
 
+def multiclass_generator(random_state=1576, dims=(2, 3), nb_classes=(3, 5),
+                         cl_sample=5):
+    """Generate classic multiclass toyset.
+
+    Works as the two_class_generator but alternativly with number and string
+    labels.
+    """
+    np.random.seed = random_state
+    label_list = list('abcdefghijklmnopqrstuvwxyz')
+    for dim, nb_cl in product(range(*dims), range(*nb_classes)):
+        centers = np.random.normal(np.zeros(dim + 1), 5, size=(nb_cl, dim + 1))
+        datas = np.vstack(
+            np.random.normal(centers[cl, :], 0.5, size=(cl_sample, dim + 1))
+            for cl in range(nb_cl)
+        )
+        datas[:, -1] = np.repeat(range(nb_cl), cl_sample)
+        np.random.shuffle(datas)
+        yield datas[:, 0:-1], datas[:, -1]
+        yield (datas[:, 0:-1],
+               np.array([label_list[int(i)] for i in datas[:, -1]]))
+
+
 @pytest.mark.parametrize('classifier', classifier_iterator())
 @pytest.mark.parametrize('dataset', two_class_generator())
 def test_oneclass(classifier, dataset):
@@ -63,6 +87,19 @@ def test_oneclass(classifier, dataset):
 @pytest.mark.parametrize('classifier', classifier_iterator())
 @pytest.mark.parametrize('dataset', two_class_generator())
 def test_twoclasses(classifier, dataset):
+    """Perform one class classification.
+    """
+    X, y = dataset
+    X_train, X_test, y_train, y_test = train_test_split(X, y, shuffle=False)
+    classif = classifier()
+    classif.fit(X_train, y_train)
+    y_pred = classif.predict(X_test)
+    confusion_matrix(y_test, y_pred)
+
+
+@pytest.mark.parametrize('classifier', classifier_iterator())
+@pytest.mark.parametrize('dataset', multiclass_generator())
+def test_multiclass(classifier, dataset):
     """Perform one class classification.
     """
     X, y = dataset
