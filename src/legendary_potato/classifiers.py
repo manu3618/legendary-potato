@@ -41,6 +41,7 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
         X, y = check_X_y(X, y)
         self.X_ = X
         self.C = C
+        self.support_vectors_ = set()
         dim = len(y)
         if is_kernel_matrix:
             self.kernel_matrix = kernel
@@ -69,7 +70,7 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
         else:
             # one or two classes
             self.y_ = np.sign(y)
-            self._fit_two_classes()
+            self.radius_, self.alphas_ = self._fit_two_classes()
         return self
 
     def predict(self, X, kernel=None):
@@ -108,12 +109,15 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
         # \forall i \alpha[i] \geq 0 \leftrightdoublearrow min(\alpha) \geq 0
         cons = [{'type': 'eq',   'fun': lambda al: np.sum(al) - 1},
                 {'type': 'ineq', 'fun': lambda al: np.min(al)}]
-        if self.C:
+        if self.C and self.C is not np.inf:
             # soft margin case: \forall i \alpha[i] \leq C
             cons.append({'type': 'ineq',
                          'fun': lambda alphas: self.C - np.max(alphas)})
+        else:
+            self.C = np.inf
         predicted_alphas = minimize(ell_d, alphas, constraints=tuple(cons))
+        support_vectors = set(np.where(i < self.C and not np.isclose(i, 0)
+                                       for i in predicted_alphas)[0])
+        self.support_vectors_ = self.support_vectors_.union(support_vectors)
         radius = 0  # TODO
-        if len(self.classes_) < 3:
-            self.alphas_ = predicted_alphas
         return radius, predicted_alphas
