@@ -109,15 +109,25 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
         # \forall i \alpha[i] \geq 0 \leftrightdoublearrow min(\alpha) \geq 0
         cons = [{'type': 'eq',   'fun': lambda al: np.sum(al) - 1},
                 {'type': 'ineq', 'fun': lambda al: np.min(al)}]
-        if self.C and self.C is not np.inf:
+        if C and C is not np.inf:
             # soft margin case: \forall i \alpha[i] \leq C
             cons.append({'type': 'ineq',
-                         'fun': lambda alphas: self.C - np.max(alphas)})
+                         'fun': lambda alphas: C - np.max(alphas)})
         else:
-            self.C = np.inf
+            C = np.inf
         predicted_alphas = minimize(ell_d, alphas, constraints=tuple(cons))
-        support_vectors = set(np.where(i < self.C and not np.isclose(i, 0)
-                                       for i in predicted_alphas)[0])
+        alphas = predicted_alphas.x
+        support_vectors = set(np.where(i < C and not np.isclose(i, 0)
+                                       for i in alphas)[0])
         self.support_vectors_ = self.support_vectors_.union(support_vectors)
-        radius = 0  # TODO
-        return radius, predicted_alphas
+        radius = np.mean([
+            self.kernel_matrix[r, r]
+            - 2 * np.sum(alphas[t] * self.kernel_matrix[t, r]
+                         for t in range(dim))
+            + np.sum(alphas[s] * alphas[t] * self.kernel_matrix[r, t]
+                     for s in range(dim)
+                     for t in range(dim))
+            for r in range(dim)
+            if alphas[r] < C and not np.isclose(0, alphas[r])
+        ])
+        return radius, alphas
