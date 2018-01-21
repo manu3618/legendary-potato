@@ -24,7 +24,10 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
         Those parameters may be overwritten by the fit() method.
         """
         self.kernel_matrix = kernel_matrix  # kernel matrix used for training
-        self.kernel = kernel
+        if kernel is None:
+            self.kernel = np.dot
+        else:
+            self.kernel = kernel
         self.C = C
         self.string_labels = False          # are labels stings or int?
 
@@ -44,10 +47,11 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
         self.support_vectors_ = set()
         dim = len(y)
         if is_kernel_matrix:
-            self.kernel_matrix = kernel
+            self.kernel_matrix = X
         else:
             if self.kernel is None:
-                self.kernel = np.dot
+                raise ValueError("You must provide either a kernel function "
+                                 "or a kernel matrix.")
             self.sample = self.X_
             self.kernel_matrix = self.matrix()
         self.classes_ = np.unique(y)
@@ -75,7 +79,7 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
 
     def predict(self, X, kernel=None):
         # TODO
-        check_is_fitted(self,  ['X_', 'y_'])
+        check_is_fitted(self,  ['X_', 'alphas_'])
         X = check_array(X)
         return np.ones(X.shape[0], dtype=int)  # TODO delete
         return np.array(
@@ -94,6 +98,7 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
             y = self.y_
         dim = len(self.X_)
         alphas = [0 for _ in range(dim)]
+        C = self.C
 
         def ell_d(al):
             """Dual function to minimize.
