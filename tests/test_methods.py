@@ -12,20 +12,19 @@ from legendary_potato.methods import KernelMethod
 
 from .common import TEST_PATH, kernel_sample_iterator
 
-
-GRAMMATRIX_PATH = os.path.join(TEST_PATH, 'gram_matrix')
-COMPOSITION_FILE = os.path.join(TEST_PATH, 'composition.yaml')
+GRAMMATRIX_PATH = os.path.join(TEST_PATH, "gram_matrix")
+COMPOSITION_FILE = os.path.join(TEST_PATH, "composition.yaml")
 
 
 def composition_iterator(filename=COMPOSITION_FILE):
     """Return an iterator over possible kernel composition from file.
     """
-    with open(filename, 'r') as fd:
+    with open(filename, "r") as fd:
         ret = list(yaml.load_all(fd))
     return ret[0].items()
 
 
-@pytest.mark.parametrize(('kernel', 'sample'), kernel_sample_iterator())
+@pytest.mark.parametrize(("kernel", "sample"), kernel_sample_iterator())
 def test_matrix(kernel, sample):
     """Regression test on gram matrix.
 
@@ -36,14 +35,13 @@ def test_matrix(kernel, sample):
     sample -- the sample to construct the Gram matrix
     """
     kernel_name = kernel.__name__  # TODO: find a more feng shui way
-    matrix_path = os.path.join(GRAMMATRIX_PATH, kernel_name + '.csv')
+    matrix_path = os.path.join(GRAMMATRIX_PATH, kernel_name + ".csv")
     potato_util = KernelMethod(kernel)
     cur_matrix = potato_util.matrix(tr_s for _, tr_s in sample)
     if os.path.exists(matrix_path):
         test_matrix = pd.read_csv(matrix_path, header=None, index_col=False)
         np.testing.assert_allclose(
-            np.array(test_matrix, dtype=cur_matrix.dtype),
-            cur_matrix
+            np.array(test_matrix, dtype=cur_matrix.dtype), cur_matrix
         )
 
     else:
@@ -62,8 +60,8 @@ def test_empty_matrix():
         potato_util.matrix([])
 
 
-@pytest.mark.parametrize(('kernel', 'sample'), kernel_sample_iterator())
-@pytest.mark.parametrize(('composition', 'args'), composition_iterator())
+@pytest.mark.parametrize(("kernel", "sample"), kernel_sample_iterator())
+@pytest.mark.parametrize(("composition", "args"), composition_iterator())
 def test_composition(kernel, sample, composition, args):
     """Build kernel composition and test it on the sample file and test matix.
 
@@ -82,7 +80,6 @@ def test_composition(kernel, sample, composition, args):
         potato_util = KernelMethod(new_kern)
         mat = potato_util.matrix(tr_s for _, tr_s in sample)
 
-    assert (
-        np.all(np.linalg.eigvals(mat) > 0)
-        or np.isclose([np.min(np.linalg.eigvals(mat))], [0])
+    assert np.all(np.linalg.eigvals(mat) > 0) or np.isclose(
+        [np.min(np.linalg.eigvals(mat))], [0]
     )

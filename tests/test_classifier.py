@@ -1,9 +1,8 @@
-import pytest
-
 import numpy as np
-from sklearn.utils.estimator_checks import check_estimator
+import pytest
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import train_test_split
+from sklearn.utils.estimator_checks import check_estimator
 
 import legendary_potato.classifiers as classifiers
 
@@ -47,8 +46,8 @@ def two_class_generator(random_state=1576, dims=(1, 10)):
         yield data[:, 0:-1], data[:, -1]
 
 
-@pytest.mark.parametrize('classifier', classifier_iterator())
-@pytest.mark.parametrize('dataset', two_class_generator())
+@pytest.mark.parametrize("classifier", classifier_iterator())
+@pytest.mark.parametrize("dataset", two_class_generator())
 def test_oneclass(classifier, dataset):
     """Perform one class classification.
     """
@@ -60,8 +59,8 @@ def test_oneclass(classifier, dataset):
     classif.predict(X_test)
 
 
-@pytest.mark.parametrize('classifier', classifier_iterator())
-@pytest.mark.parametrize('dataset', two_class_generator())
+@pytest.mark.parametrize("classifier", classifier_iterator())
+@pytest.mark.parametrize("dataset", two_class_generator())
 def test_twoclasses(classifier, dataset):
     """Perform one class classification.
     """
@@ -73,7 +72,7 @@ def test_twoclasses(classifier, dataset):
     confusion_matrix(y_test, y_pred)
 
 
-@pytest.mark.parametrize('classifier', classifier_iterator())
+@pytest.mark.parametrize("classifier", classifier_iterator())
 def test_sklearn_compatibility(classifier):
     """Check the compatibility.
     """

@@ -3,7 +3,7 @@
 import numpy as np
 
 
-class KernelMethod():
+class KernelMethod:
     """Kernel utils."""
 
     def __init__(self, potato, sample=None):
@@ -40,15 +40,16 @@ class KernelMethod():
         if ix is None:
             ix = (list(range(dim)), list(range(dim)))
 
-        return np.array([[self.potato(sample[i], sample[j]) for i in ix[0]]
-                         for j in ix[1]])
+        return np.array(
+            [[self.potato(sample[i], sample[j]) for i in ix[0]] for j in ix[1]]
+        )
 
     def _square_dist(self, s0, s1):
         """Used by distance.
         """
-        return (self.potato(s0, s0)
-                + self.potato(s1, s1)
-                - 2 * self.potato(s0, s1))
+        return (
+            self.potato(s0, s0) + self.potato(s1, s1) - 2 * self.potato(s0, s1)
+        )
 
     def distance(self, sample0=None, sample1=None):
         """Compute squarenorm.
@@ -68,16 +69,24 @@ class KernelMethod():
         if sample0 is not None and sample1 is not None:
             return np.sqrt(self._square_dist(sample0, sample1))
         elif sample0 is None and sample1 is not None:
-            return np.array(np.sqrt(self._square_dist(ele, sample1))
-                            for ele in self._sample)
+            return np.array(
+                np.sqrt(self._square_dist(ele, sample1))
+                for ele in self._sample
+            )
         elif sample1 is None:
             if sample0 is not None:
                 self.sample = list(sample0)
             sample = self.sample
             dim = len(sample)
-            return np.array([[np.sqrt(self._square_dist(sample[i], sample[j]))
-                              for i in range(dim)]
-                             for j in range(dim)])
+            return np.array(
+                [
+                    [
+                        np.sqrt(self._square_dist(sample[i], sample[j]))
+                        for i in range(dim)
+                    ]
+                    for j in range(dim)
+                ]
+            )
 
     def _cosine(self, s1, s2):
         """used by cosine"""
@@ -86,7 +95,7 @@ class KernelMethod():
         if num == 0:
             return 0
         else:
-            return num/denom
+            return num / denom
 
     def cosine(self, sample0=None, sample1=None):
         """Return the cosine between 2 samples
@@ -110,9 +119,12 @@ class KernelMethod():
         elif sample1 is None:
             sample = sample0 or self.sample
             dim = len(sample)
-            return np.array([[self._cosine(sample[i], sample[j])
-                              for i in range(dim)]
-                             for j in range(dim)])
+            return np.array(
+                [
+                    [self._cosine(sample[i], sample[j]) for i in range(dim)]
+                    for j in range(dim)
+                ]
+            )
 
     def orthonormal(self, sample=None):
         """Return the orthonormal base from samples.
@@ -128,7 +140,7 @@ class KernelMethod():
             raise ValueError("No valid sample to build an orthogonal base.")
         # TODO
 
-    def fourier_serie(self, sample,  base=None):
+    def fourier_serie(self, sample, base=None):
         """Decompose  the sample on its fourier serie.
 
         The Fourier serie is defined  as the projection onto an orthonormal

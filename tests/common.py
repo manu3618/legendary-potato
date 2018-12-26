@@ -4,9 +4,8 @@ import numpy as np
 
 import legendary_potato.kernel
 
-
 TEST_PATH = os.path.join(os.path.abspath(os.path.curdir))
-SAMPLE_PATH = os.path.join(TEST_PATH, 'sample')
+SAMPLE_PATH = os.path.join(TEST_PATH, "sample")
 
 
 def kernel_sample_iterator():
@@ -35,10 +34,10 @@ def kernel_samples(kernel_name):
     file name.
     """
     kernel_sample_path = os.path.join(SAMPLE_PATH, kernel_name)
-    sep = ','
+    sep = ","
     if os.path.isfile(kernel_sample_path):
         # One sample per line
-        with open(kernel_sample_path, 'r') as sample_file:
+        with open(kernel_sample_path, "r") as sample_file:
             line = sample_file.readline()
             try:
                 if len(np.fromstring(line, sep=sep)) > 0:
@@ -62,5 +61,5 @@ def kernel_samples(kernel_name):
         # kernel_sample_path is a directory
         for sample_file in os.listdir(kernel_sample_path):
             file_path = os.path.join(kernel_sample_path, sample_file)
-            with open(file_path, 'r') as pot:
+            with open(file_path, "r") as pot:
                 yield sample_file, pot.read()
