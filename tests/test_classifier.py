@@ -1,11 +1,10 @@
 from itertools import product
 
-import pytest
-
 import numpy as np
-from sklearn.utils.estimator_checks import check_estimator
+import pytest
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import train_test_split
+from sklearn.utils.estimator_checks import check_estimator
 
 import legendary_potato.classifiers as classifiers
 
@@ -49,15 +48,16 @@ def two_class_generator(random_state=1576, dims=(1, 10)):
         yield data[:, 0:-1], data[:, -1]
 
 
-def multiclass_generator(random_state=1576, dims=(2, 3), nb_classes=(3, 5),
-                         cl_sample=5):
+def multiclass_generator(
+    random_state=1576, dims=(2, 3), nb_classes=(3, 5), cl_sample=5
+):
     """Generate classic multiclass toyset.
 
     Works as the two_class_generator but alternativly with number and string
     labels.
     """
     np.random.seed = random_state
-    label_list = list('abcdefghijklmnopqrstuvwxyz')
+    label_list = list("abcdefghijklmnopqrstuvwxyz")
     for dim, nb_cl in product(range(*dims), range(*nb_classes)):
         centers = np.random.normal(np.zeros(dim + 1), 5, size=(nb_cl, dim + 1))
         datas = np.vstack(
@@ -67,12 +67,14 @@ def multiclass_generator(random_state=1576, dims=(2, 3), nb_classes=(3, 5),
         datas[:, -1] = np.repeat(range(nb_cl), cl_sample)
         np.random.shuffle(datas)
         yield datas[:, 0:-1], datas[:, -1]
-        yield (datas[:, 0:-1],
-               np.array([label_list[int(i)] for i in datas[:, -1]]))
+        yield (
+            datas[:, 0:-1],
+            np.array([label_list[int(i)] for i in datas[:, -1]]),
+        )
 
 
-@pytest.mark.parametrize('classifier', classifier_iterator())
-@pytest.mark.parametrize('dataset', two_class_generator())
+@pytest.mark.parametrize("classifier", classifier_iterator())
+@pytest.mark.parametrize("dataset", two_class_generator())
 def test_oneclass(classifier, dataset):
     """Perform one class classification.
     """
@@ -84,8 +86,8 @@ def test_oneclass(classifier, dataset):
     classif.predict(X_test)
 
 
-@pytest.mark.parametrize('classifier', classifier_iterator())
-@pytest.mark.parametrize('dataset', two_class_generator())
+@pytest.mark.parametrize("classifier", classifier_iterator())
+@pytest.mark.parametrize("dataset", two_class_generator())
 def test_twoclasses(classifier, dataset):
     """Perform one class classification.
     """
@@ -97,8 +99,8 @@ def test_twoclasses(classifier, dataset):
     confusion_matrix(y_test, y_pred)
 
 
-@pytest.mark.parametrize('classifier', classifier_iterator())
-@pytest.mark.parametrize('dataset', multiclass_generator())
+@pytest.mark.parametrize("classifier", classifier_iterator())
+@pytest.mark.parametrize("dataset", multiclass_generator())
 def test_multiclass(classifier, dataset):
     """Perform one class classification.
     """
@@ -110,7 +112,7 @@ def test_multiclass(classifier, dataset):
     confusion_matrix(y_test, y_pred)
 
 
-@pytest.mark.parametrize('classifier', classifier_iterator())
+@pytest.mark.parametrize("classifier", classifier_iterator())
 def test_sklearn_compatibility(classifier):
     """Check the compatibility.
     """
