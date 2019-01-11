@@ -1,11 +1,11 @@
-'''
+# coding: utf-8
+"""
 Classifiers.
-'''
+"""
 import numpy as np
-
-from sklearn.base import BaseEstimator, ClassifierMixin
-from sklearn.utils.validation import check_X_y, check_array, check_is_fitted
 from scipy.optimize import minimize
+from sklearn.base import BaseEstimator, ClassifierMixin
+from sklearn.utils.validation import check_array, check_is_fitted, check_X_y
 
 from .methods import KernelMethod
 
@@ -18,6 +18,7 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
         s.t.        y_i \| \phi(x_i) -c \| < r^2 + xi_i \forall i
                     xi_i > 0                            \forall i
     """
+
     def __init__(self, kernel_matrix=None, kernel=None, C=None):
         """Initialize some parameters.
 
@@ -69,8 +70,10 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
             self.alphas_ = {}
             self.radius_ = {}
             for cl in self.classes_:
+                # TODO: multithread/asyncio
                 alphas, radius = self._fit_two_classes(self.ys_[cl])
                 self.alphas_[cl], self.radius_[cl] = alphas, radius
+
         else:
             # one or two classes
             self.y_ = np.sign(y)

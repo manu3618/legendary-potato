@@ -1,3 +1,4 @@
+# coding: utf-8
 "Generic kernels."
 
 from calendar import monthrange
@@ -27,7 +28,7 @@ def from_feature_map(mapping, *args, **kwargs):
 
     The mapping is the feature map function $\phi$ such that:
     .. math::
-        K: (x_1, x_2) \mapsto <\phi(x_1), \phi(x_2)>
+    K: (x_1, x_2) \mapsto <\phi(x_1), \phi(x_2)>
 
     define the kernel.
     """
@@ -107,7 +108,7 @@ def l2(f1, f2, interval=(-1, 1)):
 
     The result is:
     .. math::
-        K(f_1, f_2) = \int_{interval} f_1(x) f_2(x) dx
+    K(f_1, f_2) = \int_{interval} f_1(x) f_2(x) dx
 
     """
     return scipy.integrate.quad(

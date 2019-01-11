@@ -1,3 +1,4 @@
+# coding: utf-8
 """Utils"""
 
 import numpy as np
@@ -41,14 +42,14 @@ class KernelMethod:
             ix = (list(range(dim)), list(range(dim)))
 
         return np.array(
-            [[self.potato(sample[i], sample[j]) for i in ix[0]] for j in ix[1]]
+            [[self.kernel(sample[i], sample[j]) for i in ix[0]] for j in ix[1]]
         )
 
     def _square_dist(self, s0, s1):
         """Used by distance.
         """
         return (
-            self.potato(s0, s0) + self.potato(s1, s1) - 2 * self.potato(s0, s1)
+            self.kernel(s0, s0) + self.kernel(s1, s1) - 2 * self.kernel(s0, s1)
         )
 
     def distance(self, sample0=None, sample1=None):
