@@ -59,7 +59,7 @@ class KernelMethod:
         and sample1 is returned.
         If sample1 is not None and sample0 is None, the list of distances
         between sample1 and all self.sample  are returned
-        If sample1 is None, the disante matrix for self.sample is returned. If
+        If sample1 is None, the distance matrix for self.sample is returned. If
         sample 0 is not None, self.sample is replaced by sample0.
 
         The distance is computed as
