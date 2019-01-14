@@ -1,5 +1,5 @@
 # coding: utf-8
-from itertools import product
+from itertools import chain, product
 
 import numpy as np
 import pytest
@@ -111,6 +111,21 @@ def test_multiclass(classifier, dataset):
     classif.fit(X_train, y_train)
     y_pred = classif.predict(X_test)
     confusion_matrix(y_test, y_pred)
+
+
+@pytest.mark.parametrize(
+    "dataset", chain(two_class_generator(), multiclass_generator())
+)
+def test_svdd(dataset):
+    """Test SVDD specificities.
+    """
+    X, y = dataset
+    X_train, X_test, y_train, y_test = train_test_split(X, y, shuffle=False)
+    svdd = classifiers.SVDD()
+    svdd.fit(X_train, y_train)
+
+    for X in X_train, X_test:
+        assert np.all(svdd.multiclass_dist_center(X) >= 0)
 
 
 @pytest.mark.parametrize("classifier", classifier_iterator())

@@ -2,7 +2,10 @@
 """
 Classifiers.
 """
+from itertools import product
+
 import numpy as np
+import pandas as pd
 from scipy.optimize import minimize
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.utils.validation import check_array, check_is_fitted, check_X_y
@@ -30,10 +33,19 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
         else:
             self.kernel = kernel
         self.C = C
-        self.string_labels = False          # are labels stings or int?
+        self.string_labels = False  # are labels strings or int?
+        self.hypersphere_nb = 1
 
-    def fit(self, X, y, C=None, kernel=None, is_kernel_matrix=False,
-            *args, **kwargs):
+    def fit(
+        self,
+        X,
+        y,
+        C=None,
+        kernel=None,
+        is_kernel_matrix=False,
+        *args,
+        **kwargs
+    ):
         """Fit the classifier.
 
         C -- contraint in the soft margin case. If None or zero, then fall back
@@ -44,53 +56,135 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
         """
         X, y = check_X_y(X, y)
         self.X_ = X
-        self.C = C
+        if C is not None:
+            self.C = C
         self.support_vectors_ = set()
-        dim = len(y)
         if is_kernel_matrix:
             self.kernel_matrix = X
         else:
             if self.kernel is None:
-                raise ValueError("You must provide either a kernel function "
-                                 "or a kernel matrix.")
+                raise ValueError(
+                    "You must provide either a kernel function "
+                    "or a kernel matrix."
+                )
             self.sample = self.X_
             self.kernel_matrix = self.matrix()
         self.classes_ = np.unique(y)
 
         if np.isreal(y[0]):
-            self.string_labels = True
-        if (len(self.classes_) > 2) or (len(self.classes_) == 2
-                                        and self.string_labels):
+            self.string_labels = False
+
+        if len(self.classes_) > 2 or (
+            len(self.classes_) == 2 and self.string_labels
+        ):
             # each class has its own hypersphere (one class vs rest)
-            # TODO
-            self.ys_ = {
-                cl: np.array([1 if y[i] == cl else -1 for i in range(dim)])
-                for cl in self.classes_
-            }
-            self.alphas_ = {}
-            self.radius_ = {}
+            self.hypersphere_nb = len(self.classes_)
+            self.individual_svdd = {}
             for cl in self.classes_:
                 # TODO: multithread/asyncio
-                alphas, radius = self._fit_two_classes(self.ys_[cl])
-                self.alphas_[cl], self.radius_[cl] = alphas, radius
-
+                cl_svdd = SVDD(
+                    kernel_matrix=self.kernel_matrix,
+                    kernel=self.kernel,
+                    C=self.C,
+                )
+                cl_y = [1 if elt == cl else -1 for elt in y]
+                cl_svdd.fit(X, cl_y, C, kernel, is_kernel_matrix)
+                self.individual_svdd[cl] = cl_svdd
+            self.y_ = np.array([0])
+            self.alphas_ = np.array([0])
         else:
-            # one or two classes
+            # one hypersphere
             self.y_ = np.sign(y)
-            self.radius_, self.alphas_ = self._fit_two_classes()
+            self.radius_, self.alphas_ = self._fit_one_hypersphere()
         return self
 
-    def predict(self, X, kernel=None):
-        # TODO
-        check_is_fitted(self,  ['X_', 'alphas_'])
-        X = check_array(X)
-        return np.ones(X.shape[0], dtype=int)  # TODO delete
-        return np.array(
-            self.utils.distance(self.center, vect) / self.radius - 1
-            for vect in X
-        )
+    def predict(self, X, decision_radius=1):
+        """Predict classes
 
-    def _fit_two_classes(self, y=None, class1=1, class2=-1):
+        Args:
+            X: training sample
+            decision_radius (numeric): modification of decision radius.
+        The frontier between classes will be the computed hypersphere whose
+        radius is multiply by this factor.
+        """
+        # TODO # XXX
+        check_is_fitted(self, ["X_", "alphas_"])
+        X = check_array(X)
+
+        if self.hypersphere_nb == 1:
+            return self._predict_one_hypersphere(X, decision_radius)
+
+        else:
+            # check class
+            dist_classes = pd.DataFrame(
+                {
+                    cl: svdd._dist_center(X)
+                    for cl, svdd in self.individual_svdd.items()
+                }
+            )
+            return np.array(dist_classes.idxmin(axis=1))
+
+    def _predict_one_hypersphere(self, X=None, decision_radius=1):
+        """Compute results for one hypersphere
+
+        Args:
+            decision_radius (numeric): modification of decision radius.
+        The frontier between classes will be the computed hypersphere whose
+        radius is multiply by this factor.
+
+        Returns:
+            (np.array)
+        """
+        pred = [self._dist_center(X) * decision_radius / self.radius_ - 1]
+        return np.sign(pred).reshape(-1)
+
+    def _dist_center(self, X):
+        """Compute ditance to classe center
+        """
+        if not self.hypersphere_nb == 1:
+            raise RuntimeWarning("Not available for multiclass SVDD")
+
+        check_is_fitted(self, ["X_", "alphas_"])
+        dim = len(self.alphas_)
+        if X is None:
+            # return distances for training set
+            dists = [
+                self.kernel_matrix(i, i)
+                - 2
+                * sum(
+                    self.alphas_[t] * self.kernel_matrix(i, t)
+                    for t in range(dim)
+                )
+                + sum(
+                    self.alphas_[t]
+                    * self.alphas_[s]
+                    * self.kernel_matrix[s, t]
+                    for s, t in product(range(dim), range(dim))
+                )
+                for i in range(dim)
+            ]
+        else:
+            # return distances for vector X
+            dists = [
+                self.kernel(z, z)
+                - 2
+                * sum(
+                    self.alphas_[t] * self.kernel(self.X_[t], z)
+                    for t in range(dim)
+                )
+                + sum(
+                    self.alphas_[s]
+                    * self.alphas_[t]
+                    * self.kernel(self.X_[t], z)
+                    for s in range(dim)
+                    for t in range(dim)
+                )
+                for z in X
+            ]
+
+        return dists
+
+    def _fit_one_hypersphere(self, y=None, class1=1, class2=-1):
         """Perform actual fit process
 
         * compute alphas
@@ -108,34 +202,82 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
 
             function to maximize:
             .. maths::
-            \alpha diag(K)^T - \alpha K \alpha^T
+                \alpha diag(K)^T - \alpha K \alpha^T
             """
             ay = al * y
-            return (ay.dot(self.kernel_matrix).dot(ay.T)
-                    - ay.dot(np.diag(self.kernel_matrix)))
+            return ay.dot(self.kernel_matrix).dot(ay.T) - ay.dot(
+                np.diag(self.kernel_matrix)
+            )
 
         # \forall i \alpha[i] \geq 0 \leftrightdoublearrow min(\alpha) \geq 0
-        cons = [{'type': 'eq',   'fun': lambda al: np.sum(al) - 1},
-                {'type': 'ineq', 'fun': lambda al: np.min(al)}]
+        cons = [
+            {"type": "eq", "fun": lambda al: np.sum(al) - 1},
+            {"type": "ineq", "fun": lambda al: np.min(al)},
+        ]
         if C and C is not np.inf:
             # soft margin case: \forall i \alpha[i] \leq C
-            cons.append({'type': 'ineq',
-                         'fun': lambda alphas: C - np.max(alphas)})
+            cons.append(
+                {"type": "ineq", "fun": lambda alphas: C - np.max(alphas)}
+            )
         else:
             C = np.inf
         predicted_alphas = minimize(ell_d, alphas, constraints=tuple(cons))
         alphas = predicted_alphas.x
-        support_vectors = set(np.where(i < C and not np.isclose(i, 0)
-                                       for i in alphas)[0])
+        support_vectors = set(
+            np.where(i < C and not np.isclose(i, 0) for i in alphas)[0]
+        )
         self.support_vectors_ = self.support_vectors_.union(support_vectors)
-        radius = np.mean([
-            self.kernel_matrix[r, r]
-            - 2 * np.sum(alphas[t] * self.kernel_matrix[t, r]
-                         for t in range(dim))
-            + np.sum(alphas[s] * alphas[t] * self.kernel_matrix[r, t]
-                     for s in range(dim)
-                     for t in range(dim))
-            for r in range(dim)
-            if alphas[r] < C and not np.isclose(0, alphas[r])
-        ])
+
+        # mean distance to support vectors
+        radius = np.mean(
+            [
+                self.dist_to_center(r, alphas)
+                for r in range(dim)
+                if alphas[r] < C and not np.isclose(0, alphas[r])
+            ]
+        )
         return radius, alphas
+
+    def multiclass_dist_center(self, X=None):
+        """Return distance to each class center.
+        """
+        if self.hypersphere_nb > 1:
+            dist_classes = {
+                cl: svdd._dist_center(X)
+                for cl, svdd in self.individual_svdd.items()
+            }
+        else:
+            dist_classes = {1: self._dist_center(X)}
+        return pd.DataFrame(dist_classes)
+
+    def dist_to_center(self, r, alphas=None, cl=None):
+        """Distance from vector #r to center.
+
+        Args:
+            r (int): rank of the vector
+            alphas (array): list of alphas
+            cl : class whose center will be used.
+        """
+        if cl is None:
+            cl = 1
+        if alphas is None:
+            if len(self.classes_) > 1:
+                alphas = alphas[cl]
+            else:
+                alphas = self.alphas
+        K = self.kernel_matrix
+        n = K.shape[0]
+        # dist:
+        # K_(r, r)
+        # - 2 \sum_t \alpha_t \K_(r ,t)
+        # + \sum_s\sum_t \alpha_s \alpha_t K_(r, t)
+        return sum(
+            [
+                K[r, r],
+                -2 * sum(alphas[t] * K[r, t] for t in range(n)),
+                sum(
+                    alphas[s] * alphas[t] * K[r, t]
+                    for s, t in product(range(n), range(n))
+                ),
+            ]
+        )
