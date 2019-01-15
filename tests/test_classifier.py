@@ -124,8 +124,14 @@ def test_svdd(dataset):
     svdd = classifiers.SVDD()
     svdd.fit(X_train, y_train)
 
-    for X in X_train, X_test:
-        assert np.all(svdd.multiclass_dist_center(X) >= 0)
+    assert svdd.radius_ > 0
+    assert np.all(
+        svdd.dist_center_training_sample(r) >= 0 for r in range(len(X_train))
+    )
+
+    for X in X_train, X_test, None:
+        assert np.all(svdd.dist_all_centers(X) >= 0)
+        assert np.all(svdd.relative_dist_all_centers(X) >= 0)
 
 
 @pytest.mark.parametrize("classifier", classifier_iterator())
