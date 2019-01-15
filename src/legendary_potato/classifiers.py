@@ -92,8 +92,9 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
                 cl_y = [1 if elt == cl else -1 for elt in y]
                 cl_svdd.fit(X, cl_y, C, kernel, is_kernel_matrix)
                 self.individual_svdd[cl] = cl_svdd
-            self.y_ = np.array([0])
+            self.y_ = y
             self.alphas_ = np.array([0])
+            self.radius_ = 0
         else:
             # one hypersphere
             self.y_ = np.sign(y)
@@ -250,7 +251,13 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
             )
         else:
             C = np.inf
-        predicted_alphas = minimize(ell_d, alphas, constraints=tuple(cons))
+
+        # TODO: asyncio
+        predicted_alphas = minimize(
+            ell_d, alphas, constraints=tuple(cons), options={"maxiter": 100000}
+        )
+        if not predicted_alphas.success:
+            raise RuntimeError(predicted_alphas.message)
         alphas = predicted_alphas.x
         support_vectors = set(
             np.where(i < C and not np.isclose(i, 0) for i in alphas)[0]

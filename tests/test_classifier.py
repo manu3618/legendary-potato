@@ -124,6 +124,7 @@ def test_svdd(dataset):
     svdd = classifiers.SVDD()
     svdd.fit(X_train, y_train)
 
+    assert np.all(svdd.alphas_ >= 0)
     assert svdd.radius_ > 0
     assert np.all(
         svdd.dist_center_training_sample(r) >= 0 for r in range(len(X_train))
