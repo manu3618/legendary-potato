@@ -6,7 +6,7 @@ from itertools import product
 
 import numpy as np
 import pandas as pd
-from scipy.optimize import minimize
+from scipy.optimize import LinearConstraint, minimize
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.utils.validation import check_is_fitted, check_X_y
 
@@ -226,6 +226,10 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
         dim = len(self.X_)
         alphas = [0 for _ in range(dim)]
         C = self.C
+        if C is None:
+            C = np.inf
+        upper = np.array([C for _ in range(dim)])
+        one = np.array([1])
 
         def ell_d(al):
             """Dual function to minimize.
@@ -239,41 +243,45 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
                 np.diag(self.kernel_matrix)
             )
 
-        # TODO: use new style constraint
-        # \forall i \alpha[i] \geq 0 \leftrightdoublearrow min(\alpha) \geq 0
         cons = [
-            {"type": "eq", "fun": lambda al: np.sum(al) - 1},
-            {"type": "ineq", "fun": lambda al: np.min(al)},
+            # \forall i 0 \leq \alpha[i] \leq C
+            LinearConstraint(A=np.identity(dim), lb=np.zeros(dim), ub=upper),
+            # \sum_i \alpha[i] = 1
+            LinearConstraint(A=np.ones(dim), lb=one, ub=one),
         ]
-        if C and C is not np.inf:
-            # soft margin case: \forall i \alpha[i] \leq C
-            cons.append(
-                {"type": "ineq", "fun": lambda alphas: C - np.max(alphas)}
-            )
-        else:
-            C = np.inf
 
         # TODO: asyncio
         predicted_alphas = minimize(
-            ell_d, alphas, constraints=tuple(cons), options={"maxiter": 10000}
+            ell_d, alphas, constraints=cons, options={"maxiter": 10000}
         )
         if not predicted_alphas.success:
             raise RuntimeError(predicted_alphas.message)
         alphas = predicted_alphas.x
-        support_vectors = set(
-            np.where(i < C and not np.isclose(i, 0) for i in alphas)[0]
+
+        # nullify almost null alphas:
+        alphas = list(map(lambda x: 0 if np.isclose(x, 0) else x, alphas))
+
+        # support vectors: 0 < alphas <= C
+        support_vectors = set.intersection(
+            set(np.where(np.less_equal(alphas, C))[0]),
+            set(np.where(np.nonzero(alphas))[0]),
         )
         self.support_vectors_ = self.support_vectors_.union(support_vectors)
 
-        # mean distance to support vectors
-        radius = np.mean(
-            [
-                self.dist_center_training_sample(r, alphas)
-                for r in range(dim)
-                if alphas[r] < C and not np.isclose(0, alphas[r])
-            ]
-        )
-        return radius, alphas
+        if len(self.support_vectors_) < 2:
+            radius = np.min(
+                self.distance_matrix() + np.diag([C for _ in range(dim)])
+            ) / 2
+        else:
+            # mean distance to support vectors
+            radius = np.mean(
+                [
+                    self.dist_center_training_sample(r, alphas)
+                    for r in range(dim)
+                    if alphas[r] < C and alphas[r] == 0
+                ]
+            )
+        return radius, np.array(alphas)
 
     def dist_all_centers(self, X=None):
         """Return distance to each class center.
@@ -296,7 +304,7 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
                 for cl, svdd in self.individual_svdd.items()
             }
         else:
-            dist_classes = {1: self._dist_center(X)/self.radius_}
+            dist_classes = {1: self._dist_center(X) / self.radius_}
         return pd.DataFrame(dist_classes)
 
     def dist_center_training_sample(self, r, alphas=None, cl=None):

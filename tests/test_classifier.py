@@ -136,8 +136,14 @@ def test_svdd(dataset):
     except RuntimeError as exn:
         pytest.skip("optimization did not work: %s" % exn)
 
-    assert np.all(svdd.alphas_ >= 0)
-    assert svdd.radius_ > 0
+    if svdd.hypersphere_nb == 1:
+        assert np.all(svdd.alphas_ >= 0)
+        assert svdd.radius_ > 0
+    else:
+        for sub_svdd in svdd.individual_svdd.values():
+            assert np.all(sub_svdd.alphas_ >= 0)
+            assert sub_svdd.radius_ > 0
+
     assert np.all(
         svdd.dist_center_training_sample(r) >= 0 for r in range(len(X_train))
     )
