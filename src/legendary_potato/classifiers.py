@@ -239,6 +239,7 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
                 np.diag(self.kernel_matrix)
             )
 
+        # TODO: use new style constraint
         # \forall i \alpha[i] \geq 0 \leftrightdoublearrow min(\alpha) \geq 0
         cons = [
             {"type": "eq", "fun": lambda al: np.sum(al) - 1},
@@ -254,7 +255,7 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
 
         # TODO: asyncio
         predicted_alphas = minimize(
-            ell_d, alphas, constraints=tuple(cons), options={"maxiter": 100000}
+            ell_d, alphas, constraints=tuple(cons), options={"maxiter": 10000}
         )
         if not predicted_alphas.success:
             raise RuntimeError(predicted_alphas.message)
