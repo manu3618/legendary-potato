@@ -45,7 +45,7 @@ def kernel_samples(kernel_name):
                     # line composed of numbers
                     is_string = False
                 else:
-                    # line composed of stings
+                    # line composed of strings
                     is_string = True
             except ValueError:
                 # line composed of mix of strings and numbers. should be
