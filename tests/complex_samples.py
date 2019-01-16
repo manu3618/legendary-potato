@@ -1,3 +1,4 @@
+# coding: utf-8
 """
 Data used to test complex kernels
 """

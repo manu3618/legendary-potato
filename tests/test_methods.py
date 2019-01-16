@@ -1,5 +1,7 @@
+# coding: utf-8
 import os
 from contextlib import suppress
+from itertools import product
 
 import numpy as np
 import pandas as pd
@@ -48,6 +50,41 @@ def test_matrix(kernel, sample):
         with suppress(FileExistsError):
             os.makedirs(GRAMMATRIX_PATH)
         pd.DataFrame(cur_matrix).to_csv(matrix_path, header=None, index=None)
+
+
+@pytest.mark.parametrize(("kernel", "sample"), kernel_sample_iterator())
+def test_matrix_properties(kernel, sample):
+    """Test some properties.
+    """
+    util = KernelMethod(kernel)
+    sample = [value for nu, value in sample]
+    gram = util.matrix(sample)
+    dist = util.distance_matrix()
+    dim = len(sample)
+
+    # symmetry
+    for mat in gram, dist:
+        for m, n in product(range(dim), repeat=2):
+            if np.isnan(mat[m, n]):
+                mat[m, n] = 0
+
+        assert np.all(np.isclose(mat - mat.transpose(), 0))
+
+    # distances are distances
+    assert np.all(dist >= 0)
+    for m, n, p in product(range(dim), repeat=3):
+        assert any(
+            [
+                np.isclose(dist[m, p] + dist[p, n] - dist[m, n], 0),
+                dist[m, n] <= dist[m, p] + dist[p, n],
+            ]
+        )
+    assert np.all(np.isclose(np.diag(dist), 0))
+    for m, n in product(range(dim), repeat=2):
+        if np.isclose(dist[m, n], 0):
+            # TODO: check equality method for samples
+            # assert sample[m] == sample[n]
+            pass
 
 
 def test_empty_matrix():
