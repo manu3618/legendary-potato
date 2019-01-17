@@ -1,6 +1,10 @@
 # coding: utf-8
 """
 Classifiers.
+
+Based on sklearn doc:
+("http://scikit-learn.org/dev/developers/contributing.html"
+ "#rolling-your-own-estimator")
 """
 from itertools import product
 
@@ -269,9 +273,12 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
         self.support_vectors_ = self.support_vectors_.union(support_vectors)
 
         if len(self.support_vectors_) < 2:
-            radius = np.min(
-                self.distance_matrix() + np.diag([C for _ in range(dim)])
-            ) / 2
+            radius = (
+                np.min(
+                    self.distance_matrix() + np.diag([C for _ in range(dim)])
+                )
+                / 2
+            )
         else:
             # mean distance to support vectors
             radius = np.mean(
