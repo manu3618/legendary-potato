@@ -125,6 +125,12 @@ html_sidebars = {
     ]
 }
 
+# -- Manu addition for matjax conf ----------------------------------------
+mathjax_config = {
+    "extensions": ["tex2jax.js"],
+    "jax": ["input/TeX", "output/HTML-CSS"],
+    "HTML-CSS": {"fonts": ["TeX"]},
+}
 
 # -- Options for HTMLHelp output ------------------------------------------
 
