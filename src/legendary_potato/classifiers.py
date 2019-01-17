@@ -22,44 +22,44 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
 
     .. math::
         min_{r, c}  r^2 - C \sum_t  xi_t
-        s.t.        y_i \| \phi(x_i) -c \| < r^2 + xi_i \forall i
-                    xi_i > 0                            \forall i
+        s.t.        y_i \| \phi(x_i) -c \| < r^2 + xi_i \\forall i
+                    xi_i > 0                            \\forall i
+
     """
 
     def __init__(self, kernel_matrix=None, kernel=None, C=None):
         """Initialize some parameters.
 
         Those parameters may be overwritten by the fit() method.
+
         """
         self.kernel_matrix = kernel_matrix  # kernel matrix used for training
         if kernel is None:
             self.kernel = np.dot
         else:
             self.kernel = kernel
-        self.C = C
+        self.C = C or 0
         self.string_labels = False  # are labels strings or int?
         self.hypersphere_nb = 1
 
-    def fit(
-        self,
-        X,
-        y,
-        C=None,
-        kernel=None,
-        is_kernel_matrix=False,
-        *args,
-        **kwargs
-    ):
+    def fit(self, X, y=None, C=None, kernel=None, is_kernel_matrix=False):
         """Fit the classifier.
 
-        C -- contraint in the soft margin case. If None or zero, then fall back
-        to hard margin case
-        kernel -- kernel method to use
-        is_kernel_matrix -- if true, the input is  treated as a kernel matrix
-        *args, **kwargs -- extra arguments for kernel function
+        Args:
+            X: training samples.
+            y: training labels. If None, consider all samples belongs to the
+                same class (labeled "1").
+            C (numeric): contraint in the soft margin case. If None or zero,
+                then fall back to hard margin case.
+            kernel (fun): kernel method to use.
+            is_kernel_matrix (bool): if True, the input is treated as
+                a kernel matrix.
+
         """
         # X, y = check_X_y(X, y) # TODO: add check method for X
-        n = len(y)
+        n = len(X)
+        if y is None:
+            y = np.ones(n)
         _, y = check_X_y(np.identity(n), y)
         self.X_ = X
         if C is not None:
@@ -111,8 +111,9 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
         Args:
             X (array like): list of test samples.
             decision_radius (numeric): modification of decision radius.
-        The frontier between classes will be the computed hypersphere whose
-        radius is multiply by this factor.
+                The frontier between classes will be the computed hypersphere
+                whose radius is multiply by this factor.
+
         """
         check_is_fitted(self, ["X_", "alphas_"])
         # X = check_array(X)
@@ -125,22 +126,13 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
             dist_classes = self.relative_dist_all_centers(X)
             return np.array(dist_classes.idxmin(axis=1))
 
-    def fit_predict(
-        self,
-        X,
-        y,
-        C=None,
-        kernel=None,
-        is_kernel_matrix=False,
-        *args,
-        **kwargs
-    ):
+    def fit_predict(self, X, y, C=None, kernel=None, is_kernel_matrix=False):
         """Fit as the fit() methods.
 
         Return:
             (array) : class for each training sample.
         """
-        self.fit(X, y, C, kernel, is_kernel_matrix, *args, **kwargs)
+        self.fit(X, y, C, kernel, is_kernel_matrix)
         # TODO
         raise NotImplementedError
 

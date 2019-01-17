@@ -11,8 +11,9 @@ class KernelMethod:
 
     def __init__(self, kernel, sample=None):
         """
-        kernel -- the kernel
-        sample -- a list or tuple of sample
+        Args:
+            kernel: the kernel
+            sample (list): list or tuple of sample
 
         the kernel must be callable by:
         >>> kernel(sample[i], sample[j])
@@ -26,10 +27,11 @@ class KernelMethod:
 
         Args:
             sample: the sample to build the kernel matrix. If None, the sample
-        from self are used. If self.sample is None, sample replace it.
+                from self are used. If self.sample is None, sample replace it.
             ix: the indices of the matrice to be return. If None, all
-        the matrice is returned as a numpy.ndarray. It must not be a
-        generator as it will be consumed many times.
+                the matrice is returned as a numpy.ndarray. It must not be a
+                generator as it will be consumed many times.
+
         """
         update_matrix = False  # Whether to update self.matrix
         if sample is None and self.sample is None:
@@ -106,7 +108,8 @@ class KernelMethod:
 
         Args:
             sample: the sample to build the kernel matrix. If None, the sample
-        from self are used. If self.sample is None, sample replace it.
+                from self are used. If self.sample is None, sample replace it.
+
         """
         gram_mat = self.matrix(sample)
         mshape = gram_mat.shape
@@ -118,7 +121,9 @@ class KernelMethod:
         return dist_mat
 
     def _cosine(self, s1, s2):
-        """used by cosine"""
+        """Used by cosine.
+
+        """
         num = self.kernel(s1, s2)
         denom = np.sqrt(self.kernel(s1, s1)) * np.sqrt(self.kernel(s2, s2))
         if num == 0:
@@ -137,8 +142,9 @@ class KernelMethod:
 
         The cosine is defined as
         .. math::
-            cos(sample_0, sample_1) = \frac{\langle sample_0, sample_1 \rangle}
-                                           {\|sample_0\| \|sample_1\|}
+            cos(sample_0, sample_1) = \
+                \\frac{\langle sample_0, sample_1 \\rangle} \
+                      {\|sample_0\| \|sample_1\|}
 
         """
         if sample0 is not None and sample1 is not None:
@@ -158,8 +164,10 @@ class KernelMethod:
     def orthonormal(self, sample=None):
         """Return the orthonormal base from samples.
 
-        Return a list of vector ${v_i}$. For each sample s_{n}, add to the
-        list $v_{n} = s_{n} - \sum_{i<n} \langle s, v_i \rangle v_i$
+        Return:
+            (list) vectors ${v_i}$. For each sample s_{n}, add to the
+                list $v_{n} = s_{n} - \sum_{i<n} \langle s, v_i \\rangle v_i$
+
         """
         if self.sample is None:
             self.sample = sample
