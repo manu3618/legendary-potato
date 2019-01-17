@@ -11,13 +11,17 @@ def normalize(kernel, *args, **kwargs):
     """Return the normalized version.
 
     This correspond to the new kernel
+
     .. math::
-        K(x_1, x_2) = \\frac{k_0(x_1, x2)}{\\sqrt(k_0(x_1, x_1) k_0(x_2, x_2))}
+        K(x_1, x_2) = \\frac{k_0(x_1, x2)}{\sqrt(k_0(x_1, x_1) k_0(x_2, x_2))}
 
     This is equivalent to normalize the feature map:
 
     .. math::
-        \\Phi(x) = \\frac{\\phi(x)}{\\|\\phi(x)\\|}
+        \Phi(x) = \\frac{\phi(x)}{\|\phi(x)\|}
+
+    Returns:
+        (fun) the kernel function.
 
     """
 
