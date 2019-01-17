@@ -1,5 +1,5 @@
 # coding: utf-8
-"""Utils"""
+"""Utils for kernel methods."""
 
 from itertools import product
 
@@ -7,20 +7,29 @@ import numpy as np
 
 
 class KernelMethod:
-    """Kernel utils."""
+    """Kernel utils.
 
-    def __init__(self, kernel, sample=None):
+    Specific to one kernel along with it taining sample.
+
+    """
+
+    def __init__(self, kernel=None, sample=None, kernel_matrix=None):
         """
         Args:
-            kernel: the kernel
+            kernel (fun): the kernel function
             sample (list): list or tuple of sample
+            kernel_matrix (np.array): 2D symmetric array.
 
-        the kernel must be callable by:
-        >>> kernel(sample[i], sample[j])
+        Either the kernel of the kernel_matrix should be provided.
+
+        the kernel must be callable by
+        .. code-block::
+            kernel(sample[i], sample[j])
+
         """
         self.kernel = kernel
         self.sample = sample
-        self.kernel_matrix = None
+        self.kernel_matrix = kernel_matrix
 
     def matrix(self, sample=None, ix=None):
         """Return the kernel matrix.
@@ -77,12 +86,16 @@ class KernelMethod:
         sample 0 is not None, self.sample is replaced by sample0.
 
         The distance is computed as
+
         .. math::
             d(x_1, x_2) = \|x_1 - x_2 \|
 
+        Returns:
+            (np.array) distance array, 1x1 array if a ingle scalar is expected.
+
         """
         if sample0 is not None and sample1 is not None:
-            return np.sqrt(self._square_dist(sample0, sample1))
+            return np.array(np.sqrt(self._square_dist(sample0, sample1)))
         elif sample0 is None and sample1 is not None:
             return np.array(
                 np.sqrt(self._square_dist(ele, sample1))
@@ -132,7 +145,7 @@ class KernelMethod:
             return num / denom
 
     def cosine(self, sample0=None, sample1=None):
-        """Return the cosine between 2 samples
+        """Return the cosine between 2 samples.
 
         If sample0 is None, samples from self are used.
         If sample1 is not None, then the cosine between sample0 and sample1 is
@@ -141,10 +154,11 @@ class KernelMethod:
         returned.
 
         The cosine is defined as
+
         .. math::
-            cos(sample_0, sample_1) = \
-                \\frac{\langle sample_0, sample_1 \\rangle} \
-                      {\|sample_0\| \|sample_1\|}
+            cos(sample_0, sample_1) =
+            \\frac{\langle sample_0, sample_1 \\rangle}
+            {\|sample_0\| \|sample_1\|}
 
         """
         if sample0 is not None and sample1 is not None:
@@ -164,9 +178,11 @@ class KernelMethod:
     def orthonormal(self, sample=None):
         """Return the orthonormal base from samples.
 
-        Return:
-            (list) vectors ${v_i}$. For each sample s_{n}, add to the
-                list $v_{n} = s_{n} - \sum_{i<n} \langle s, v_i \\rangle v_i$
+        For each sample :math:`s_{n}`, add to the list
+        :math:`v_{n} = s_{n} - \sum_{i<n} \langle s, v_i \\rangle v_i`
+
+        Returns:
+            (list) vectors :math:`\{v_i\}`.
 
         """
         if self.sample is None:
@@ -188,3 +204,4 @@ class KernelMethod:
         if base is None:
             base = self.orthonormal()
         # TODO
+        raise NotImplementedError

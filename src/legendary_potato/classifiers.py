@@ -129,7 +129,7 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
     def fit_predict(self, X, y, C=None, kernel=None, is_kernel_matrix=False):
         """Fit as the fit() methods.
 
-        Return:
+        Returns:
             (array) : class for each training sample.
         """
         self.fit(X, y, C, kernel, is_kernel_matrix)
