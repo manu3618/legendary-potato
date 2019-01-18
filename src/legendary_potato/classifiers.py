@@ -3,8 +3,8 @@
 Classifiers.
 
 Based on sklearn doc:
-("http://scikit-learn.org/dev/developers/contributing.html"
- "#rolling-your-own-estimator")
+"http://scikit-learn.org/dev/developers/contributing.html\
+#rolling-your-own-estimator"
 """
 from itertools import product
 
@@ -21,9 +21,11 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
     """Implement Support Vector DataDescription
 
     .. math::
-        min_{r, c}  r^2 - C \sum_t  xi_t
-        s.t.        y_i \| \phi(x_i) -c \| < r^2 + xi_i \\forall i
-                    xi_i > 0                            \\forall i
+        \\begin{cases}
+            min_{r, c} & r^2 - C \sum_t \\xi_t \\\\
+            s.t        & y_i \| \phi(x_i) -c \| < r^2 + xi_i \\forall i \\\\
+                       & \\xi_i > 0  \\forall i \\\\
+        \end{cases}
 
     """
 
