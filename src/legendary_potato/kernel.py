@@ -23,17 +23,24 @@ def _subsets(set0):
     }
 
 
-def from_feature_map(mapping, *args, **kwargs):
-    """Define a kernel from a feature map.
+def from_feature_map(phi, *args, **kwargs):
+    r"""Define a kernel from a feature map.
 
-    The mapping is the feature map function $\phi$ such that:
+    The mapping is the feature map function :math:`\phi` such that:
+
     .. math::
-    K: (x_1, x_2) \mapsto <\phi(x_1), \phi(x_2)>
+        K: (x_1, x_2) \mapsto <\phi(x_1), \phi(x_2)>
 
     define the kernel.
+
+    Args:
+        phi(fun): feature mapping.
+
+    Returns:
+        (fun) kernel function.
     """
     return lambda x1, x2: float(
-        np.dot(mapping(x1, *args, **kwargs).T, mapping(x2, *args, **kwargs))
+        np.dot(phi(x1, *args, **kwargs).T, phi(x2, *args, **kwargs))
     )
 
 
@@ -104,11 +111,12 @@ def temporal(ts1, ts2):
 
 
 def l2(f1, f2, interval=(-1, 1)):
-    """Kernel on functions square-integrable on interval.
+    r"""Kernel on functions square-integrable on interval.
 
     The result is:
+
     .. math::
-    K(f_1, f_2) = \int_{interval} f_1(x) f_2(x) dx
+        K(f_1, f_2) = \int_{interval} f_1(x) f_2(x) dx
 
     """
     return scipy.integrate.quad(
@@ -116,18 +124,28 @@ def l2(f1, f2, interval=(-1, 1)):
     )[0]
 
 
-def matrix_weighted(x1, x2, matrix=None):
+def matrix_weighted(matrix):
     """Kernel modified by the symetric matrix.
-
-    If no matrix is provided, the identity matrix is used
 
     .. math::
         K(x_1, x_2) = x_1 matrix x_2^T
 
-        x1 -- a 1 dimensional ndarray
-        x2 -- a 1 dimensional ndarray with the same shape as x1
+    Args:
+        matrix (np.array): symmetric matrix
+
+    Returns:
+        (fun) kernel function
 
     """
-    if matrix is None:
-        matrix = np.identity(len(x1))
-    return x1.dot(matrix).dot(x2)
+    if not np.all(np.isclose(matrix - matrix.transpose(), 0)):
+        raise ValueError("input matrix not symmetric")
+
+    def kernel(x1, x2):
+        """
+        Args:
+            x1 (np.array): a 1D array
+            x2 (np.array): same shape as x1
+
+        """
+        return x1.dot(matrix).dot(x2)
+    return kernel

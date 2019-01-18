@@ -13,7 +13,7 @@ Kernels
 Utils
 -----
 
-.. automodule:: legendary_potato.utils
+.. automodule:: legendary_potato.methods
   :members:
 
 Classifiers
