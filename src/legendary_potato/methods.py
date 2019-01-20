@@ -205,3 +205,25 @@ class KernelMethod:
             base = self.orthonormal()
         # TODO
         raise NotImplementedError
+
+    def projection(self, samples=None, base=None):
+        """Perform projection of sample onto basis
+
+        This is mainly done for better representation (lower dimensions).
+
+        Args:
+            samples (list of samples): list of sample to project. If None
+                use self.sample
+            base (list of vectors): base to expres the projection. If None,
+                build a base from the first self.sample
+
+        """
+        if samples in None:
+            samples = self.samples
+        if base is None:
+            base = self.orthonormal()[0, 1]
+
+        projection = [
+            [self.kernel(sample, u) for u in base] for sample in samples
+        ]
+        return projection
