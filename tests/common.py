@@ -5,7 +5,7 @@ import numpy as np
 
 import legendary_potato.kernel
 
-TEST_PATH = os.path.join(os.path.abspath(os.path.curdir))
+TEST_PATH = os.path.dirname(__file__)
 SAMPLE_PATH = os.path.join(TEST_PATH, "sample")
 
 
