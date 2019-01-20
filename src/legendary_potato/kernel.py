@@ -124,7 +124,7 @@ def l2(f1, f2, interval=(-1, 1)):
     )[0]
 
 
-def matrix_weighted(matrix):
+def matrix_weighted_factory(matrix=None):
     """Kernel modified by the symetric matrix.
 
     .. math::
@@ -147,5 +147,28 @@ def matrix_weighted(matrix):
             x2 (np.array): same shape as x1
 
         """
+        if matrix is None:
+            return x1.dot(x2)
         return x1.dot(matrix).dot(x2)
+
     return kernel
+
+
+def matrix_weighted_example(x1, x2):
+    """Example of matrix weigted.
+
+    Args:
+        x1, x2: 1x5 ndarray
+
+    """
+    matrix = np.array(
+        [
+            [6, 2, 5, 17, -19],
+            [2, 18, 1, 16, 11],
+            [5, 1, 10, -1, 2],
+            [17, 16, -1, -12, 7],
+            [-19, 11, 2, 7, 4],
+        ]
+    )
+    kernel = matrix_weighted_factory(matrix)
+    return kernel(x1, x2)
