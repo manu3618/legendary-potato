@@ -35,12 +35,16 @@ def two_class_generator(random_state=1576, dims=(1, 10)):
         orig[0] = 1
         b_centers = np.random.normal(orig, 2, size=(3, dim))
         a_data = np.vstack(
-            np.random.normal(center, 0.5, size=(5, dim))
-            for center in a_centers
+            [
+                np.random.normal(center, 0.5, size=(5, dim))
+                for center in a_centers
+            ]
         )
         b_data = np.vstack(
-            np.random.normal(center, 0.5, size=(5, dim))
-            for center in b_centers
+            [
+                np.random.normal(center, 0.5, size=(5, dim))
+                for center in b_centers
+            ]
         )
 
         labels = [1 for _ in range(15)] + [-1 for _ in range(15)]
@@ -62,8 +66,12 @@ def multiclass_generator(
     for dim, nb_cl in product(range(*dims), range(*nb_classes)):
         centers = np.random.normal(np.zeros(dim + 1), 5, size=(nb_cl, dim + 1))
         datas = np.vstack(
-            np.random.normal(centers[cl, :], 0.5, size=(cl_sample, dim + 1))
-            for cl in range(nb_cl)
+            [
+                np.random.normal(
+                    centers[cl, :], 0.5, size=(cl_sample, dim + 1)
+                )
+                for cl in range(nb_cl)
+            ]
         )
         datas[:, -1] = np.repeat(range(nb_cl), cl_sample)
         np.random.shuffle(datas)
