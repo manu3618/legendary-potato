@@ -40,7 +40,7 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
             self.kernel = np.dot
         else:
             self.kernel = kernel
-        self.C = C or 0
+        self.C = C
         self.string_labels = False  # are labels strings or int?
         self.hypersphere_nb = 1
 
