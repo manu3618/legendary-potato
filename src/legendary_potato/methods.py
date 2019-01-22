@@ -206,9 +206,23 @@ class KernelMethod:
 
         base_vect = [sample[0]]
         for n in range(1, len(sample)):
-            s = self.kernel(sample[n],  base_vect[0]) * base_vect[0]
-            for i in range(1, n):
-                s = s + self.kernel(sample[n],  base_vect[i]) * base_vect[i]
+            coords = [self.kernel(sample[n], v) for v in base_vect]
+
+            s = coords[0] * base_vect[0]
+            for i in range(1, len(base_vect)):
+                # base_vect may contain less than n vectors
+                s = s + coords[i] * base_vect[i]
+            new_vect = sample[n] - s
+
+            if any(
+                not np.isclose(self.kernel(new_vect, base_vect[i]), 0)
+                for i in range(len(base_vect))
+                if i != n
+            ):
+                # new vector not free
+                # XXX
+                continue
+
             base_vect.append(sample[n] + (-1) * s)
 
         return base_vect
