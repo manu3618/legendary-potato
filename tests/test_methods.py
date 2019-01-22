@@ -12,7 +12,7 @@ import legendary_potato.composition
 import legendary_potato.kernel
 from legendary_potato.methods import KernelMethod
 
-from .common import TEST_PATH, kernel_sample_iterator
+from .common import TEST_PATH, kernel_sample_iterator, two_class_generator
 
 GRAMMATRIX_PATH = os.path.join(TEST_PATH, "gram_matrix")
 COMPOSITION_FILE = os.path.join(TEST_PATH, "composition.yaml")
@@ -122,12 +122,12 @@ def test_composition(kernel, sample, composition, args):
     )
 
 
-@pytest.mark.parametrize(("kernel", "sample"), kernel_sample_iterator())
-def test_orth_base(kernel, sample):
+@pytest.mark.parametrize("sample", two_class_generator())
+def test_orth_base(sample):
     """Check orthonormality of built base.
     """
-    potato = KernelMethod(kernel)
-    base = potato.orthonormal([elt for _, elt in sample])
+    potato = KernelMethod()
+    base = potato.orthonormal(list(sample[0]))
     for i, j in product(range(len(base)), repeat=2):
         dot = potato.kernel(base[i], base[j])
         if i == j:
