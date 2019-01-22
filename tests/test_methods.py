@@ -120,3 +120,17 @@ def test_composition(kernel, sample, composition, args):
     assert np.all(np.linalg.eigvals(mat) > 0) or np.isclose(
         [np.min(np.linalg.eigvals(mat))], [0]
     )
+
+
+@pytest.mark.parametrize(("kernel", "sample"), kernel_sample_iterator())
+def test_orth_base(kernel, sample):
+    """Check orthonormality of built base.
+    """
+    potato = KernelMethod(kernel)
+    base = potato.orthonormal([elt for _, elt in sample])
+    for i, j in product(range(len(base)), repeat=2):
+        dot = potato.kernel(base[i], base[j])
+        if i == j:
+            assert np.isclose(dot, 1)
+        else:
+            assert np.isclose(dot, 0)

@@ -2,6 +2,7 @@
 """Utils for kernel methods."""
 
 from itertools import product
+from inspect import isgenerator
 
 import numpy as np
 
@@ -28,8 +29,23 @@ class KernelMethod:
 
         """
         self.kernel = kernel
-        self.sample = sample
         self.kernel_matrix = kernel_matrix
+        self.sample = None
+        self._check_sample_arg(sample)
+
+    def _check_sample_arg(self, sample=None):
+        """Check if sample is a generator and update self.sample if needed.
+
+        Returns:
+            (list) sample
+        """
+        if isgenerator(sample):
+            sample = list(sample)
+        if self.sample is None:
+            self.sample = sample
+        if sample is None:
+            sample = self.sample
+        return sample
 
     def matrix(self, sample=None, ix=None):
         """Return the kernel matrix.
@@ -175,24 +191,42 @@ class KernelMethod:
                 ]
             )
 
-    def orthonormal(self, sample=None):
-        """Return the orthonormal base from samples.
+    def orthogonal(self, sample=None):
+        """Return the orthongonal base from samples.
 
         For each sample :math:`s_{n}`, add to the list
-        :math:`v_{n} = s_{n} - \sum_{i<n} \langle s, v_i \\rangle v_i`
+        :math:`v_{n} = s_{n} - \sum_{i<n} \langle s_{n}, v_i \\rangle v_i`
 
         Returns:
             (list) vectors :math:`\{v_i\}`.
-
         """
-        if self.sample is None:
-            self.sample = sample
-        if sample is None:
-            sample = self.sample
+        sample = self._check_sample_arg(sample)
         if sample is None:
             raise ValueError("No valid sample to build an orthogonal base.")
-        # TODO
-        raise NotImplementedError
+
+        base_vect = [sample[0]]
+        for n in range(1, len(sample)):
+            s = self.kernel(sample[n],  base_vect[0]) * base_vect[0]
+            for i in range(1, n):
+                s = s + self.kernel(sample[n],  base_vect[i]) * base_vect[i]
+            base_vect.append(sample[n] + (-1) * s)
+
+        return base_vect
+
+    def orthonormal(self, sample=None):
+        """Return the orthongonal base from samples.
+
+        For each sample :math:`s_{n}`, compute
+        :math:`v_{n} = s_{n} - \sum_{i<n} \langle s_{n}, v_i \\rangle v_i`
+        and add to the list :math:`u_{n} = \\frac{v_{n}}{\|v_{n}\|}`
+
+        Returns:
+            (list) vectors :math:`\{u_i\}`.
+
+        """
+        return [
+            np.sqrt(1 / self.kernel(v, v)) * v for v in self.orthogonal(sample)
+        ]
 
     def fourier_serie(self, sample, base=None):
         """Decompose  the sample on its fourier serie.
@@ -200,9 +234,11 @@ class KernelMethod:
         The Fourier serie is defined  as the projection onto an orthonormal
         base. If none is provided, the base used is the one from
         self.orthonormal.
+
+        No check on the sabe orthonormality is performed.
         """
         if base is None:
-            base = self.orthonormal()
+            base = self.orthonormal(sample)
         # TODO
         raise NotImplementedError
 
@@ -218,10 +254,8 @@ class KernelMethod:
                 build a base from the first self.sample
 
         """
-        if samples in None:
-            samples = self.samples
         if base is None:
-            base = self.orthonormal()[0, 1]
+            base = self.orthonormal(samples)[0, 1]
 
         projection = [
             [self.kernel(sample, u) for u in base] for sample in samples
