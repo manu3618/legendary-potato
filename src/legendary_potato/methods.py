@@ -14,7 +14,7 @@ class KernelMethod:
 
     """
 
-    def __init__(self, kernel=None, sample=None, kernel_matrix=None):
+    def __init__(self, kernel=np.dot, sample=None, kernel_matrix=None):
         """
         Args:
             kernel (fun): the kernel function
