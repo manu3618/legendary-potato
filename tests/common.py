@@ -55,8 +55,10 @@ def kernel_samples(kernel_name):
             sample_file.seek(0)
 
             for nu, line in enumerate(sample_file):
-                if is_string:
-                    yield (nu, [row.strip for row in line.split(sep)])
+                if kernel_name in ('all_subsequences', 'p_spectrum'):
+                    yield (nu, line.strip())
+                elif is_string:
+                    yield (nu, [row.strip() for row in line.split(sep)])
                 else:
                     yield (nu, np.fromstring(line, sep=sep))
     else:

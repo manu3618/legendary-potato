@@ -172,3 +172,22 @@ def matrix_weighted_example(x1, x2):
     )
     kernel = matrix_weighted_factory(matrix)
     return kernel(x1, x2)
+
+
+def p_spectrum(x1, x2, p=2):
+    """p-spectrum kernel
+
+    number of common subsequences of length 'p'.
+    """
+    if p == 0:
+        return 0
+    s1 = zip(x1[i:] for i in range(p))
+    return sum([1 for seq in s1 if "".join(seq) in x2])
+
+
+def all_subsequences(x1, x2):
+    """all subsequences kernel
+
+    p-spectrum kernel for all p.
+    """
+    return sum([p_spectrum(x1, x2, p) for p in range(min(len(x1), len(x2)))])
