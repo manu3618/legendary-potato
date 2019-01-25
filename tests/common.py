@@ -78,6 +78,7 @@ def two_class_generator(random_state=1576, dims=(1, 10)):
 
     dims -- tuple indicating smallest and highest dimension tests
     """
+    yield from simple2d()
     np.random.seed = random_state
     for dim in range(*dims):
         orig = np.zeros(dim)
@@ -102,6 +103,15 @@ def two_class_generator(random_state=1576, dims=(1, 10)):
         data = np.hstack([np.vstack([a_data, b_data]), np.transpose([labels])])
         np.random.shuffle(data)
         yield data[:, 0:-1], data[:, -1]
+
+
+def simple2d():
+    """Yield easy to represent simple 2D 2class datasets.
+    """
+    data = [[x0, x1] for x0, x1 in product(range(-1, 1), repeat=2)]
+    labels = np.repeat([-1, 1], repeats=len(data)/2 + 1)[:len(data)]
+    for modifier in -1, 1:
+        yield data, modifier * labels
 
 
 def multiclass_generator(

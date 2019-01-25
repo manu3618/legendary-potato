@@ -64,15 +64,16 @@ class KernelMethod:
         if sample is not None and self.sample is None:
             # consume iterator/generator or copy input
             self.sample = tuple(tr_s for tr_s in sample)
+            update_matrix = True
+            sample = self.sample
 
-        sample = self.sample
         dim = len(sample)
         if dim == 0:
             raise ValueError("Zero sample provided.")
 
         if ix is None:
             ix = (list(range(dim)), list(range(dim)))
-            if self.kernel_matrix is not None:
+            if self.kernel_matrix is not None and not update_matrix:
                 return self.kernel_matrix
             update_matrix = True
 
@@ -143,7 +144,7 @@ class KernelMethod:
         gram_mat = self.matrix(sample)
         mshape = gram_mat.shape
         dist_mat = gram_mat.copy()
-        for s, t in product(range(mshape[0]), range(mshape[1])):
+        for (s, t) in product(range(mshape[0]), range(mshape[1])):
             dist_mat[s, t] = np.sqrt(
                 gram_mat[s, s] - 2 * gram_mat[s, t] + gram_mat[t, t]
             )
@@ -204,26 +205,31 @@ class KernelMethod:
         if sample is None:
             raise ValueError("No valid sample to build an orthogonal base.")
 
-        base_vect = [sample[0]]
+        base_vect = [np.array(sample[0])]
         for n in range(1, len(sample)):
-            coords = [self.kernel(sample[n], v) for v in base_vect]
+            sample_proj = self._projection(sample[n], base_vect)
+            new_vect = sample[n] - sample_proj
+            newvect_proj = self._projection(new_vect, base_vect)
 
-            s = coords[0] * base_vect[0]
-            for i in range(1, len(base_vect)):
-                # base_vect may contain less than n vectors
-                s = s + coords[i] * base_vect[i]
-            new_vect = sample[n] - s
-
-            if any(
-                not np.isclose(self.kernel(new_vect, base_vect[i]), 0)
-                for i in range(len(base_vect))
-                if i != n
+            if all(
+                [
+                    np.isclose(abs(self._cosine(new_vect, newvect_proj)), 1),
+                    not np.isclose(self.kernel(newvect_proj, newvect_proj), 0),
+                ]
             ):
-                # new vector not free
-                # XXX
+                # new vector colinear with its projection (not free)
                 continue
 
-            base_vect.append(sample[n] + (-1) * s)
+            if any(
+                [
+                    np.isclose(self.distance(new_vect, newvect_proj), 0),
+                    np.isclose(self.distance(new_vect, new_vect), 0),
+                ]
+            ):
+                # new vector not free
+                continue
+
+            base_vect.append(new_vect)
 
         return base_vect
 
@@ -239,7 +245,8 @@ class KernelMethod:
 
         """
         return [
-            np.sqrt(1 / self.kernel(v, v)) * v for v in self.orthogonal(sample)
+            np.sqrt(1 / self.kernel(v, v)) * np.array(v)
+            for v in self.orthogonal(sample)
         ]
 
     def fourier_serie(self, sample, base=None):
@@ -268,10 +275,24 @@ class KernelMethod:
                 build a base from the first self.sample
 
         """
+        samples = self._check_sample_arg(samples)
         if base is None:
             base = self.orthonormal(samples)[0, 1]
 
-        projection = [
-            [self.kernel(sample, u) for u in base] for sample in samples
-        ]
-        return projection
+        coords = [[self.kernel(sample, u) for u in base] for sample in samples]
+        # TODO
+        raise NotImplementedError
+
+    def _projection(self, sample, base):
+        """Project one sample onto base.
+
+        Args:
+            sample: sample to project
+            base (iterable): base: list of free vectors
+
+        Returns:
+            the projection.
+        """
+        coords = [self.kernel(sample, v) / self.kernel(v, v) for v in base]
+        # TODO remove DeprecationWarning: Calling np.sum(generator)
+        return np.sum(coords[i] * base[i] for i in range(len(base)))
