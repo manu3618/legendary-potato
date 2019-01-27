@@ -2,6 +2,7 @@
 "Generic kernels."
 
 from calendar import monthrange
+from collections import Counter
 from datetime import datetime
 from itertools import chain, combinations
 
@@ -181,8 +182,13 @@ def p_spectrum(x1, x2, p=2):
     """
     if p == 0:
         return 0
-    s1 = zip(x1[i : i + p] for i in range(len(x1)))
-    return sum(1 for seq in s1 if "".join(seq) in x2)
+    s1 = Counter(
+        "".join(seq) for seq in zip(x1[i : i + p] for i in range(len(x1)))
+    )
+    s2 = Counter(
+        "".join(seq) for seq in zip(x2[i : i + p] for i in range(len(x2)))
+    )
+    return sum(s1[seq] * s2[seq] for seq in s1 if len(seq) == p)
 
 
 def all_subsequences(x1, x2):
