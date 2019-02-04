@@ -75,7 +75,9 @@ def test_matrix_properties(kernel, sample):
     for m, n, p in product(range(dim), repeat=3):
         assert any(
             [
-                np.isclose(dist[m, p] + dist[p, n] - dist[m, n], 0),
+                np.isclose(
+                    dist[m, p] + dist[p, n] - dist[m, n], 0, atol=2e-08
+                ),
                 dist[m, n] <= dist[m, p] + dist[p, n],
             ]
         )
