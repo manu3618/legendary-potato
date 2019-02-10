@@ -75,13 +75,13 @@ def temporal_map(ts):
     Map onto several periodic map with periods usually used by humans.
     """
     periods = (
-        1,
-        60,
-        60 * 60,
-        60 * 60 * 24,
-        60 * 60 * 24 * 7,
-        60 * 60 * 24 * 7 * 365.2425 / 12,
-        60 * 60 * 24 * 7 * 365.2425,
+        1,  # second
+        60,  # minute
+        60 * 60,  # hour
+        60 * 60 * 24,  # day
+        60 * 60 * 24 * 7,  # week
+        60 * 60 * 24 * 7 * 365.2425 / 12,  # month
+        60 * 60 * 24 * 7 * 365.2425,  # year
     )
     datespec = datetime.utcfromtimestamp(ts)
     extraspecs = [
