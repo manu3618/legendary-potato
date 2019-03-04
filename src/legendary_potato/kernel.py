@@ -238,6 +238,6 @@ def term_frequency(x1, x2, semantic=None, terms=None):
 
     for term in terms:
         vect1.append(term1[term])
-        vect2.append(term1[term])
+        vect2.append(term2[term])
 
     return np.array(vect1).dot(semantic).dot(np.array(vect2))
