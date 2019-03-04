@@ -24,6 +24,8 @@ def test_oneclass(classifier, dataset):
     """Perform one class classification.
     """
     X, y = dataset
+    if isinstance(X, list):
+        X = np.array(X)
     X_train, X_test, y_train, y_test = train_test_split(X, y, shuffle=False)
     y_train = np.ones(X_train.shape[0])
     classif = classifier()
