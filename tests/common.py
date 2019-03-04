@@ -22,7 +22,10 @@ def kernel_iterator():
     """Return an iterator over kernels to be tested.
     """
     for kern_name in os.listdir(SAMPLE_PATH):
-        yield legendary_potato.kernel.__dict__.get(kern_name)
+        try:
+            yield legendary_potato.kernel.__dict__[kern_name]
+        except KeyError:
+            print("Cannot find kernel {}".format(kern_name))
 
 
 def kernel_samples(kernel_name):
@@ -55,7 +58,7 @@ def kernel_samples(kernel_name):
             sample_file.seek(0)
 
             for nu, line in enumerate(sample_file):
-                if kernel_name in ('all_subsequences', 'p_spectrum'):
+                if kernel_name in ("all_subsequences", "p_spectrum"):
                     yield (nu, line.strip())
                 elif is_string:
                     yield (nu, [row.strip() for row in line.split(sep)])
@@ -111,7 +114,7 @@ def simple2d():
     """Yield easy to represent simple 2D 2class datasets.
     """
     data = [[x0, x1] for x0, x1 in product(range(-1, 1), repeat=2)]
-    labels = np.repeat([-1, 1], repeats=len(data)/2 + 1)[:len(data)]
+    labels = np.repeat([-1, 1], repeats=len(data) / 2 + 1)[: len(data)]
     for modifier in -1, 1:
         yield data, modifier * labels
 

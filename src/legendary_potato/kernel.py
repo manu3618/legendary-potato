@@ -2,11 +2,12 @@
 "Generic kernels."
 
 from calendar import monthrange
-from collections import Counter
+from collections import Counter, defaultdict
 from datetime import datetime
 from itertools import chain, combinations
 
 import numpy as np
+import pandas as pd
 
 try:
     import scipy.integrate
@@ -197,3 +198,46 @@ def all_subsequences(x1, x2):
     p-spectrum kernel for all p.
     """
     return sum(p_spectrum(x1, x2, p + 1) for p in range(min(len(x1), len(x2))))
+
+
+def text_terms(text):
+    """Extract terms from text.
+    """
+    text_list = (term.lower().strip("',.?!:/*+-()") for term in text.split())
+    return Counter(text_list)
+
+
+def term_frequency(x1, x2, semantic=None, terms=None):
+    """term-frequency.
+
+    Normalized  text (tokenise, lowercase, remove ponctuation.
+
+    semantic (2D array, pandas.DataFrame): semantic matrix
+    terms (iterable of strings): terms. If None, they are extracted from
+        semantic matrix labels. If None, they areextracted from x1 and x2
+    """
+    term1 = defaultdict(int, text_terms(x1))
+    term2 = defaultdict(int, text_terms(x2))
+
+    if terms is None:
+        if not isinstance(semantic, pd.DataFrame):
+            terms = set(term1.keys())
+            terms.update(term2.keys())
+            terms = list(terms)
+        else:
+            if not isinstance(semantic.index, pd.RangeIndex):
+                terms = semantic.index
+            if not isinstance(semantic.columns, pd.RangeIndex):
+                terms = semantic.columns
+
+    if semantic is None:
+        semantic = np.identity(len(terms))
+
+    vect1 = []
+    vect2 = []
+
+    for term in terms:
+        vect1.append(term1[term])
+        vect2.append(term1[term])
+
+    return np.array(vect1).dot(semantic).dot(np.array(vect2))
