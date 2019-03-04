@@ -66,6 +66,8 @@ class KernelMethod:
             self.sample = tuple(tr_s for tr_s in sample)
             update_matrix = True
             sample = self.sample
+        if sample is None:
+            sample = self.sample
 
         dim = len(sample)
         if dim == 0:
