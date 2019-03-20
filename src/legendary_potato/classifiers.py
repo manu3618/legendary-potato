@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 from scipy.optimize import LinearConstraint, minimize
 from sklearn.base import BaseEstimator, ClassifierMixin
+from sklearn.metrics import auc
 from sklearn.utils.validation import check_is_fitted, check_X_y
 
 from .methods import KernelMethod
@@ -339,3 +340,24 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
                 ),
             ]
         )
+
+    def roc(self):
+        """Compute roc curve.
+
+        Returns
+            (list) list of tuple (x,y) to plot the curve.
+        """
+        check_is_fitted(self, ["X_", "alphas_"])
+        raise NotImplementedError
+        ret = []
+        confusion_matrix()
+        return ret
+
+    def aur(self):
+        """Compute AreaunderReceiver-operator curve.
+
+        Returns:
+            (float) area
+        """
+        x, y = self.roc().transpose()
+        return auc(x, y)
