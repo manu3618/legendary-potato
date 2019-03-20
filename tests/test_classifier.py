@@ -50,6 +50,9 @@ def test_twoclasses(classifier, dataset):
         pytest.skip("fit method did not work: %s" % exn)
     y_pred = classif.predict(X_test)
     confusion_matrix(y_test, y_pred)
+    aur = classif.aur()
+    assert aur <= 1
+    assert aur >= 0
 
 
 @pytest.mark.parametrize("classifier", classifier_iterator())

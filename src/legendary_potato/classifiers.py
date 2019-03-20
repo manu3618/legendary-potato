@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 from scipy.optimize import LinearConstraint, minimize
 from sklearn.base import BaseEstimator, ClassifierMixin
-from sklearn.metrics import auc
+from sklearn.metrics import auc, confusion_matrix
 from sklearn.utils.validation import check_is_fitted, check_X_y
 
 from .methods import KernelMethod
@@ -342,16 +342,40 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
         )
 
     def roc(self):
-        """Compute roc curve.
+        """Compute Receiver Operating Characteristic curve.
 
         Returns
             (list) list of tuple (x,y) to plot the curve.
         """
         check_is_fitted(self, ["X_", "alphas_"])
-        raise NotImplementedError
         ret = []
-        confusion_matrix()
-        return ret
+
+        radiuses = self._dist_center()
+        # FIXME decision radius not as wanted
+        min_interval = np.min(abs(radiuses[1:] - radiuses[:-1]))
+        decisions = np.hstack(
+            [radiuses + min_interval, np.linspace(0, np.max(radiuses) + 1)]
+        )
+        decisions.sort()
+
+        for radius in decisions:
+            y_pred = self._predict_one_hypersphere(
+                self.X_, decision_radius=self.radius_ * radius
+            )
+            tn, fp, fn, tp = confusion_matrix(
+                self.y_, y_pred, labels=[-1, 1]
+            ).ravel()
+            sensit = tp / (tp + fn) if not tp + fn == 0 else 1
+            fp_rate = fp / (fp + tn) if not fp + tn == 0 else 0
+            ret.append(
+                {
+                    "sensitivity": sensit,
+                    "false alarm": fp_rate,
+                    # "specificity": 1 - (fp / (fp + tn)),
+                }
+            )
+
+        return pd.DataFrame(ret)
 
     def aur(self):
         """Compute AreaunderReceiver-operator curve.
@@ -359,5 +383,5 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
         Returns:
             (float) area
         """
-        x, y = self.roc().transpose()
+        x, y = np.array(self.roc()).transpose()
         return auc(x, y)
