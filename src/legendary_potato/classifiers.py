@@ -44,6 +44,7 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
         self.C = C
         self.string_labels = False  # are labels strings or int?
         self.hypersphere_nb = 1
+        self.trained_on_sample = True  # use directly kernel matrix or sample?
 
     def fit(self, X, y=None, C=None, kernel=None, is_kernel_matrix=False):
         """Fit the classifier.
@@ -60,6 +61,7 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
 
         """
         # X, y = check_X_y(X, y) # TODO: add check method for X
+        self.trained_on_sample = not is_kernel_matrix
         n = len(X)
         if y is None:
             y = np.ones(n)
@@ -376,6 +378,41 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
             )
 
         return pd.DataFrame(ret)
+
+    def _center_one_class(self, mapping):
+        """Compute hypersphere center.
+
+        Args:
+            mapping (fun): feature map. Default to identity (consistent with
+        default kernel function)
+        """
+        check_is_fitted(self, ["X_", "alphas_"])
+        if not self.trained_on_sample:
+            raise RuntimeError("No access to initial vectors")
+
+        center = np.sum(
+            [
+                self.alphas_[i] * np.array(mapping(self.X_[i]))
+                for i in range(len(self.X_))
+            ],
+            axis=0
+        )
+        return center
+
+    def center(self, mapping=lambda x: x):
+        """Compute center coordonates.
+
+        Args:
+            mapping (fun): feature map. Default to identity (consistent with
+        default kernel function)
+        """
+        if self.hypersphere_nb > 1:
+            return {
+                cl: svdd._center_one_class(mapping)
+                for cl, svdd in self.individual_svdd.items()
+            }
+        else:
+            return {1: self._center_one_class(mapping)}
 
     def aur(self):
         """Compute AreaunderReceiver-operator curve.
