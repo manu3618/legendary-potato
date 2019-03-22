@@ -102,6 +102,27 @@ def test_svdd(dataset):
         assert np.all(svdd.relative_dist_all_centers(X) >= 0)
 
 
+SVDD_DATA = [
+    {
+        "X": [[0, 0], [0, 1], [0, -1]],
+        "y": [1, 1, 1],
+        "alphas": [0, .5, .5],
+        "center": {1: [0, 0]},
+        "radius": 1,
+    }
+]
+
+
+@pytest.mark.parametrize("dataset", SVDD_DATA)
+def test_svdd_nonreg(dataset):
+    svdd = classifiers.SVDD()
+    svdd.fit(dataset["X"], dataset["y"])
+    assert np.all(np.isclose(svdd.alphas_, dataset["alphas"]))
+    for cl, cent in svdd.center().items():
+        assert np.all(np.isclose(cent, dataset["center"][cl]))
+    assert np.isclose(svdd.radius_, dataset["radius"])
+
+
 @pytest.mark.skip(reason="no 2D-array input")
 @pytest.mark.parametrize("classifier", classifier_iterator())
 def test_sklearn_compatibility(classifier):
