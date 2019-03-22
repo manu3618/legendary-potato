@@ -108,6 +108,7 @@ SVDD_DATA = [
         "y": [1, 1, 1],
         "alphas": [0, .5, .5],
         "center": {1: [0, 0]},
+        "SV": {1, 2},
         "radius": 1,
     }
 ]
@@ -120,6 +121,7 @@ def test_svdd_nonreg(dataset):
     assert np.all(np.isclose(svdd.alphas_, dataset["alphas"]))
     for cl, cent in svdd.center().items():
         assert np.all(np.isclose(cent, dataset["center"][cl]))
+    assert svdd.support_vectors_ == dataset["SV"]
     assert np.isclose(svdd.radius_, dataset["radius"])
 
 

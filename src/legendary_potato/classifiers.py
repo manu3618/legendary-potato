@@ -69,6 +69,8 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
         self.X_ = X
         if C is not None:
             self.C = C
+        if self.C is None:
+            self.C = np.inf
         self.support_vectors_ = set()
         if is_kernel_matrix:
             self.kernel_matrix = X
@@ -227,8 +229,6 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
         dim = len(self.X_)
         alphas = [0 for _ in range(dim)]
         C = self.C
-        if C is None:
-            C = np.inf
         upper = np.array([C for _ in range(dim)])
         one = np.array([1])
 
@@ -265,7 +265,7 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
         # support vectors: 0 < alphas <= C
         support_vectors = set.intersection(
             set(np.where(np.less_equal(alphas, C))[0]),
-            set(np.where(np.nonzero(alphas))[0]),
+            set(np.nonzero(alphas)[0]),
         )
         self.support_vectors_ = self.support_vectors_.union(support_vectors)
 
@@ -274,15 +274,13 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
                 np.min(
                     self.distance_matrix() + np.diag([C for _ in range(dim)])
                 )
-                / 2
             )
         else:
             # mean distance to support vectors
             radius = np.mean(
                 [
                     self.dist_center_training_sample(r, alphas)
-                    for r in range(dim)
-                    if alphas[r] < C and alphas[r] == 0
+                    for r in self.support_vectors_
                 ]
             )
         return radius, np.array(alphas)
