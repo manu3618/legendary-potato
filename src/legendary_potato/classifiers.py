@@ -155,7 +155,8 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
             (np.array)
         """
         pred = self._dist_center(X) * decision_radius / self.radius_ - 1
-        return np.sign(pred).reshape(-1)
+        ret = np.sign(pred).reshape(-1)
+        return list(map(lambda x: 1 if x == 0 else x, ret))
 
     def _dist_center(self, X=None):
         """Compute ditance to class center.
@@ -354,7 +355,8 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
         # FIXME decision radius not as wanted
         min_interval = np.min(abs(radiuses[1:] - radiuses[:-1]))
         decisions = np.hstack(
-            [radiuses + min_interval, np.linspace(0, np.max(radiuses) + 1)]
+            # [radiuses + min_interval, np.linspace(0, np.max(radiuses) + 1)]
+            [radiuses + min_interval, [0, np.max(radiuses) + 1]]
         )
         decisions.sort()
 
@@ -365,13 +367,28 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
             tn, fp, fn, tp = confusion_matrix(
                 self.y_, y_pred, labels=[-1, 1]
             ).ravel()
-            sensit = tp / (tp + fn) if not tp + fn == 0 else 1
-            fp_rate = fp / (fp + tn) if not fp + tn == 0 else 0
+
+            # tp + fn may be null
+            if fn == 0:
+                sensit = 1 if tp else 0
+            else:
+                sensit = tp / (tp + fn)
+
+            # fp + tn may be null
+            if fp == 0:
+                fp_rate = 0
+            else:
+                fp_rate = fp / (fp + tn)
             ret.append(
                 {
                     "sensitivity": sensit,
                     "false alarm": fp_rate,
-                    # "specificity": 1 - (fp / (fp + tn)),
+                    "specificity": 1 - fp_rate,
+                    "tp": tp,
+                    "tn": tn,
+                    "fp": fp,
+                    "fn": fn,
+                    "decision radius": radius,
                 }
             )
 
@@ -418,5 +435,7 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
         Returns:
             (float) area
         """
-        x, y = np.array(self.roc()).transpose()
+        x, y = np.array(
+            self.roc().loc[:, ["false alarm", "sensitivity"]]
+        ).transpose()
         return auc(x, y)

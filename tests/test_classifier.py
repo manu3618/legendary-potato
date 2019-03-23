@@ -104,20 +104,44 @@ def test_svdd(dataset):
 
 SVDD_DATA = [
     {
+        "comment": "1-class case",
         "X": [[0, 0], [0, 1], [0, -1]],
         "y": [1, 1, 1],
         "alphas": [0, .5, .5],
         "center": {1: [0, 0]},
         "SV": {1, 2},
         "radius": 1,
+        "aur": 0,
     },
     {
+        "comment": "1-class case with one useless point",
         "X": [[0, 0], [0, 1], [0, -1], [0, .5]],
         "y": [1, 1, 1, 1],
         "alphas": [0, .5, .5, 0],
         "center": {1: [0, 0]},
         "SV": {1, 2},
         "radius": 1,
+        "aur": 0,
+    },
+    {
+        "comment": "2-class with easy enclosing",
+        "X": [[0, 0], [0, 1], [0, -1], [2, 0], [-2, 0]],
+        "y": [1, 1, 1, -1, -1],
+        "alphas": [0, .5, .5, 0, 0],
+        "center": {1: [0, 0]},
+        "SV": {1, 2},
+        "radius": 1,
+        "aur": 1/6,
+    },
+    {
+        "comment": "2 class non separable with dot kernel",
+        "X": [[0, 0], [0, 1], [0, -1], [0, .5]],
+        "y": [1, 1, 1, -1, ],
+        "alphas": [0, .5, .5, 0],
+        "center": {1: [0, 0]},
+        "SV": {1, 2},
+        "radius": 1,
+        "aur": 0,
     }
 ]
 
@@ -131,6 +155,7 @@ def test_svdd_nonreg(dataset):
         assert np.all(np.isclose(cent, dataset["center"][cl]))
     assert svdd.support_vectors_ == dataset["SV"]
     assert np.isclose(svdd.radius_, dataset["radius"])
+    assert np.isclose(svdd.aur(), dataset["aur"])
 
 
 @pytest.mark.skip(reason="no 2D-array input")
