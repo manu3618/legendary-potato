@@ -140,8 +140,7 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
             (array) : class for each training sample.
         """
         self.fit(X, y, C, kernel, is_kernel_matrix)
-        # TODO
-        raise NotImplementedError
+        self.predict()
 
     def _predict_one_hypersphere(self, X=None, decision_radius=1):
         """Compute results for one hypersphere
@@ -352,7 +351,6 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
         ret = []
 
         radiuses = self._dist_center()
-        # FIXME decision radius not as wanted
         min_interval = np.min(abs(radiuses[1:] - radiuses[:-1]))
         decisions = np.hstack(
             # [radiuses + min_interval, np.linspace(0, np.max(radiuses) + 1)]
