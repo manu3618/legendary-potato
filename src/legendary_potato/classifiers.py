@@ -140,7 +140,7 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
             (array) : class for each training sample.
         """
         self.fit(X, y, C, kernel, is_kernel_matrix)
-        self.predict()
+        self.predict(X)
 
     def _predict_one_hypersphere(self, X=None, decision_radius=1):
         """Compute results for one hypersphere
@@ -176,44 +176,48 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
         dim = len(self.alphas_)
         if X is None:
             # return distances for training set
-            square_dists = [
-                np.power(self.kernel_matrix[i, i], 2)
-                - 2
-                * sum(
-                    self.alphas_[t] * self.kernel_matrix[i, t]
-                    for t in range(dim)
-                )
-                + np.power(
-                    sum(
-                        self.alphas_[t]
-                        * self.alphas_[s]
-                        * self.kernel_matrix[s, t]
-                        for s, t in product(range(dim), range(dim))
-                    ),
-                    2,
-                )
-                for i in range(dim)
-            ]
+            square_dists = np.sqrt(
+                [
+                    np.power(self.kernel_matrix[i, i], 2)
+                    - 2
+                    * sum(
+                        self.alphas_[t] * self.kernel_matrix[i, t]
+                        for t in range(dim)
+                    )
+                    + np.power(
+                        sum(
+                            self.alphas_[t]
+                            * self.alphas_[s]
+                            * self.kernel_matrix[s, t]
+                            for s, t in product(range(dim), range(dim))
+                        ),
+                        2,
+                    )
+                    for i in range(dim)
+                ]
+            )
         else:
             # return distances for vector X
-            square_dists = [
-                np.power(self.kernel(z, z), 2)
-                - 2
-                * sum(
-                    self.alphas_[t] * self.kernel(self.X_[t], z)
-                    for t in range(dim)
-                )
-                + np.power(
-                    sum(
-                        self.alphas_[s]
-                        * self.alphas_[t]
-                        * self.kernel(self.X_[t], self.X_[s])
-                        for s, t in product(range(dim), range(dim))
-                    ),
-                    2,
-                )
-                for z in X
-            ]
+            square_dists = np.sqrt(
+                [
+                    np.power(self.kernel(z, z), 2)
+                    - 2
+                    * sum(
+                        self.alphas_[t] * self.kernel(self.X_[t], z)
+                        for t in range(dim)
+                    )
+                    + np.power(
+                        sum(
+                            self.alphas_[s]
+                            * self.alphas_[t]
+                            * self.kernel(self.X_[t], self.X_[s])
+                            for s, t in product(range(dim), range(dim))
+                        ),
+                        2,
+                    )
+                    for z in X
+                ]
+            )
 
         return np.sqrt(square_dists)
 
@@ -270,10 +274,8 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
         self.support_vectors_ = self.support_vectors_.union(support_vectors)
 
         if len(self.support_vectors_) < 2:
-            radius = (
-                np.min(
-                    self.distance_matrix() + np.diag([C for _ in range(dim)])
-                )
+            radius = np.min(
+                self.distance_matrix() + np.diag([C for _ in range(dim)])
             )
         else:
             # mean distance to support vectors
@@ -408,7 +410,7 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
                 self.alphas_[i] * np.array(mapping(self.X_[i]))
                 for i in range(len(self.X_))
             ],
-            axis=0
+            axis=0,
         )
         return center
 

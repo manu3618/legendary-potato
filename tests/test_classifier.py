@@ -141,7 +141,18 @@ SVDD_DATA = [
         "center": {1: [0, 0]},
         "SV": {1, 2},
         "radius": 1,
-        "aur": 0,
+        "aur": 2 / 3,
+    },
+    {
+        "comment": "2 class non separable with dot kernel, C specified",
+        "X": [[0, 0], [0, 1], [0, 2], [0, 3], [0, 4], [1, 1], [1, 3], [1, 4]],
+        "y": [1, -1, 1, -1, 1, -1, 1, -1],
+        "C": 0.5,
+        "alphas": [0, 0.5, 0, 0, 0.5, 0, 0, 0],
+        "center": {1: [0, 2.5]},
+        "SV": {1, 4},
+        "radius": 2.25,
+        "aur": 0.5,
     },
 ]
 
@@ -149,7 +160,7 @@ SVDD_DATA = [
 @pytest.mark.parametrize("dataset", SVDD_DATA)
 def test_svdd_nonreg(dataset):
     svdd = classifiers.SVDD()
-    svdd.fit(dataset["X"], dataset["y"])
+    svdd.fit(dataset["X"], dataset["y"], C=dataset.get("C", np.inf))
     assert np.all(np.isclose(svdd.alphas_, dataset["alphas"]))
     for cl, cent in svdd.center().items():
         assert np.all(np.isclose(cent, dataset["center"][cl]))
