@@ -136,3 +136,14 @@ def test_orth_base(sample):
             assert np.isclose(dot, 1)
         else:
             assert np.isclose(dot, 0)
+
+
+@pytest.mark.parametrize("sample", two_class_generator())
+def test_proj_run(sample):
+    """Run projection
+    """
+    potato = KernelMethod()
+    base = potato.orthonormal(list(sample[0]))
+    for i in range(len(base)):
+        coords = potato.projection([base[i]], base)
+        assert not np.isclose(coords[i], 0)

@@ -276,14 +276,15 @@ class KernelMethod:
             base (list of vectors): base to expres the projection. If None,
                 build a base from the first self.sample
 
+        Returns:
+            The projection coordinates
+
         """
         samples = self._check_sample_arg(samples)
         if base is None:
             base = self.orthonormal(samples)[0, 1]
 
-        coords = [[self.kernel(sample, u) for u in base] for sample in samples]
-        # TODO
-        raise NotImplementedError
+        return [[self.kernel(sample, u) for u in base] for sample in samples]
 
     def _projection(self, sample, base):
         """Project one sample onto base.
