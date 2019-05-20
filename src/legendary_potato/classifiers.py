@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 from scipy.optimize import LinearConstraint, minimize
 from sklearn.base import BaseEstimator, ClassifierMixin
+from sklearn.metrics import auc, confusion_matrix
 from sklearn.utils.validation import check_is_fitted, check_X_y
 
 from .methods import KernelMethod
@@ -43,6 +44,7 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
         self.C = C
         self.string_labels = False  # are labels strings or int?
         self.hypersphere_nb = 1
+        self.trained_on_sample = True  # use directly kernel matrix or sample?
 
     def fit(self, X, y=None, C=None, kernel=None, is_kernel_matrix=False):
         """Fit the classifier.
@@ -59,6 +61,7 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
 
         """
         # X, y = check_X_y(X, y) # TODO: add check method for X
+        self.trained_on_sample = not is_kernel_matrix
         n = len(X)
         if y is None:
             y = np.ones(n)
@@ -66,6 +69,8 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
         self.X_ = X
         if C is not None:
             self.C = C
+        if self.C is None:
+            self.C = np.inf
         self.support_vectors_ = set()
         if is_kernel_matrix:
             self.kernel_matrix = X
@@ -135,8 +140,7 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
             (array) : class for each training sample.
         """
         self.fit(X, y, C, kernel, is_kernel_matrix)
-        # TODO
-        raise NotImplementedError
+        self.predict(X)
 
     def _predict_one_hypersphere(self, X=None, decision_radius=1):
         """Compute results for one hypersphere
@@ -150,7 +154,8 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
             (np.array)
         """
         pred = self._dist_center(X) * decision_radius / self.radius_ - 1
-        return np.sign(pred).reshape(-1)
+        ret = np.sign(pred).reshape(-1)
+        return list(map(lambda x: 1 if x == 0 else x, ret))
 
     def _dist_center(self, X=None):
         """Compute ditance to class center.
@@ -171,44 +176,48 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
         dim = len(self.alphas_)
         if X is None:
             # return distances for training set
-            square_dists = [
-                np.power(self.kernel_matrix[i, i], 2)
-                - 2
-                * sum(
-                    self.alphas_[t] * self.kernel_matrix[i, t]
-                    for t in range(dim)
-                )
-                + np.power(
-                    sum(
-                        self.alphas_[t]
-                        * self.alphas_[s]
-                        * self.kernel_matrix[s, t]
-                        for s, t in product(range(dim), range(dim))
-                    ),
-                    2,
-                )
-                for i in range(dim)
-            ]
+            square_dists = np.sqrt(
+                [
+                    np.power(self.kernel_matrix[i, i], 2)
+                    - 2
+                    * sum(
+                        self.alphas_[t] * self.kernel_matrix[i, t]
+                        for t in range(dim)
+                    )
+                    + np.power(
+                        sum(
+                            self.alphas_[t]
+                            * self.alphas_[s]
+                            * self.kernel_matrix[s, t]
+                            for s, t in product(range(dim), range(dim))
+                        ),
+                        2,
+                    )
+                    for i in range(dim)
+                ]
+            )
         else:
             # return distances for vector X
-            square_dists = [
-                np.power(self.kernel(z, z), 2)
-                - 2
-                * sum(
-                    self.alphas_[t] * self.kernel(self.X_[t], z)
-                    for t in range(dim)
-                )
-                + np.power(
-                    sum(
-                        self.alphas_[s]
-                        * self.alphas_[t]
-                        * self.kernel(self.X_[t], self.X_[s])
-                        for s, t in product(range(dim), range(dim))
-                    ),
-                    2,
-                )
-                for z in X
-            ]
+            square_dists = np.sqrt(
+                [
+                    np.power(self.kernel(z, z), 2)
+                    - 2
+                    * sum(
+                        self.alphas_[t] * self.kernel(self.X_[t], z)
+                        for t in range(dim)
+                    )
+                    + np.power(
+                        sum(
+                            self.alphas_[s]
+                            * self.alphas_[t]
+                            * self.kernel(self.X_[t], self.X_[s])
+                            for s, t in product(range(dim), range(dim))
+                        ),
+                        2,
+                    )
+                    for z in X
+                ]
+            )
 
         return np.sqrt(square_dists)
 
@@ -224,8 +233,6 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
         dim = len(self.X_)
         alphas = [0 for _ in range(dim)]
         C = self.C
-        if C is None:
-            C = np.inf
         upper = np.array([C for _ in range(dim)])
         one = np.array([1])
 
@@ -262,24 +269,20 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
         # support vectors: 0 < alphas <= C
         support_vectors = set.intersection(
             set(np.where(np.less_equal(alphas, C))[0]),
-            set(np.where(np.nonzero(alphas))[0]),
+            set(np.nonzero(alphas)[0]),
         )
         self.support_vectors_ = self.support_vectors_.union(support_vectors)
 
         if len(self.support_vectors_) < 2:
-            radius = (
-                np.min(
-                    self.distance_matrix() + np.diag([C for _ in range(dim)])
-                )
-                / 2
+            radius = np.min(
+                self.distance_matrix() + np.diag([C for _ in range(dim)])
             )
         else:
             # mean distance to support vectors
             radius = np.mean(
                 [
                     self.dist_center_training_sample(r, alphas)
-                    for r in range(dim)
-                    if alphas[r] < C and alphas[r] == 0
+                    for r in self.support_vectors_
                 ]
             )
         return radius, np.array(alphas)
@@ -339,3 +342,100 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
                 ),
             ]
         )
+
+    def roc(self):
+        """Compute Receiver Operating Characteristic curve.
+
+        Returns
+            (list) list of tuple (x,y) to plot the curve.
+        """
+        check_is_fitted(self, ["X_", "alphas_"])
+        ret = []
+
+        radiuses = self._dist_center()
+        min_interval = np.min(abs(radiuses[1:] - radiuses[:-1]))
+        decisions = np.hstack(
+            # [radiuses + min_interval, np.linspace(0, np.max(radiuses) + 1)]
+            [radiuses + min_interval, [0, np.max(radiuses) + 1]]
+        )
+        decisions.sort()
+
+        for radius in decisions:
+            y_pred = self._predict_one_hypersphere(
+                self.X_, decision_radius=self.radius_ * radius
+            )
+            tn, fp, fn, tp = confusion_matrix(
+                self.y_, y_pred, labels=[-1, 1]
+            ).ravel()
+
+            # tp + fn may be null
+            if fn == 0:
+                sensit = 1 if tp else 0
+            else:
+                sensit = tp / (tp + fn)
+
+            # fp + tn may be null
+            if fp == 0:
+                fp_rate = 0
+            else:
+                fp_rate = fp / (fp + tn)
+            ret.append(
+                {
+                    "sensitivity": sensit,
+                    "false alarm": fp_rate,
+                    "specificity": 1 - fp_rate,
+                    "tp": tp,
+                    "tn": tn,
+                    "fp": fp,
+                    "fn": fn,
+                    "decision radius": radius,
+                }
+            )
+
+        return pd.DataFrame(ret)
+
+    def _center_one_class(self, mapping):
+        """Compute hypersphere center.
+
+        Args:
+            mapping (fun): feature map. Default to identity (consistent with
+        default kernel function)
+        """
+        check_is_fitted(self, ["X_", "alphas_"])
+        if not self.trained_on_sample:
+            raise RuntimeError("No access to initial vectors")
+
+        center = np.sum(
+            [
+                self.alphas_[i] * np.array(mapping(self.X_[i]))
+                for i in range(len(self.X_))
+            ],
+            axis=0,
+        )
+        return center
+
+    def center(self, mapping=lambda x: x):
+        """Compute center coordonates.
+
+        Args:
+            mapping (fun): feature map. Default to identity (consistent with
+        default kernel function)
+        """
+        if self.hypersphere_nb > 1:
+            return {
+                cl: svdd._center_one_class(mapping)
+                for cl, svdd in self.individual_svdd.items()
+            }
+        else:
+            return {1: self._center_one_class(mapping)}
+
+    def aur(self):
+        """Compute AreaunderReceiver-operator curve.
+
+        Returns:
+            (float) area
+        """
+        x, y = np.array(
+            self.roc().loc[:, ["false alarm", "sensitivity"]]
+        ).transpose()
+        return auc(x, y)

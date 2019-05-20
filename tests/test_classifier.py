@@ -24,6 +24,8 @@ def test_oneclass(classifier, dataset):
     """Perform one class classification.
     """
     X, y = dataset
+    if isinstance(X, list):
+        X = np.array(X)
     X_train, X_test, y_train, y_test = train_test_split(X, y, shuffle=False)
     y_train = np.ones(X_train.shape[0])
     classif = classifier()
@@ -48,6 +50,9 @@ def test_twoclasses(classifier, dataset):
         pytest.skip("fit method did not work: %s" % exn)
     y_pred = classif.predict(X_test)
     confusion_matrix(y_test, y_pred)
+    aur = classif.aur()
+    assert aur <= 1
+    assert aur >= 0
 
 
 @pytest.mark.parametrize("classifier", classifier_iterator())
@@ -95,6 +100,73 @@ def test_svdd(dataset):
     for X in X_train, X_test, None:
         assert np.all(svdd.dist_all_centers(X) >= 0)
         assert np.all(svdd.relative_dist_all_centers(X) >= 0)
+
+
+SVDD_DATA = [
+    {
+        "comment": "1-class case",
+        "X": [[0, 0], [0, 1], [0, -1]],
+        "y": [1, 1, 1],
+        "alphas": [0, 0.5, 0.5],
+        "center": {1: [0, 0]},
+        "SV": {1, 2},
+        "radius": 1,
+        "aur": 0,
+    },
+    {
+        "comment": "1-class case with one useless point",
+        "X": [[0, 0], [0, 1], [0, -1], [0, 0.5]],
+        "y": [1, 1, 1, 1],
+        "alphas": [0, 0.5, 0.5, 0],
+        "center": {1: [0, 0]},
+        "SV": {1, 2},
+        "radius": 1,
+        "aur": 0,
+    },
+    {
+        "comment": "2-class with easy enclosing",
+        "X": [[0, 0], [0, 1], [0, -1], [2, 0], [-2, 0]],
+        "y": [1, 1, 1, -1, -1],
+        "alphas": [0, 0.5, 0.5, 0, 0],
+        "center": {1: [0, 0]},
+        "SV": {1, 2},
+        "radius": 1,
+        "aur": 1 / 6,
+    },
+    {
+        "comment": "2 class non separable with dot kernel",
+        "X": [[0, 0], [0, 1], [0, -1], [0, 0.5]],
+        "y": [1, 1, 1, -1],
+        "alphas": [0, 0.5, 0.5, 0],
+        "center": {1: [0, 0]},
+        "SV": {1, 2},
+        "radius": 1,
+        "aur": 2 / 3,
+    },
+    {
+        "comment": "2 class non separable with dot kernel, C specified",
+        "X": [[0, 0], [0, 1], [0, 2], [0, 3], [0, 4], [1, 1], [1, 3], [1, 4]],
+        "y": [1, -1, 1, -1, 1, -1, 1, -1],
+        "C": 0.5,
+        "alphas": [0, 0.5, 0, 0, 0.5, 0, 0, 0],
+        "center": {1: [0, 2.5]},
+        "SV": {1, 4},
+        "radius": 2.25,
+        "aur": 0.5,
+    },
+]
+
+
+@pytest.mark.parametrize("dataset", SVDD_DATA)
+def test_svdd_nonreg(dataset):
+    svdd = classifiers.SVDD()
+    svdd.fit(dataset["X"], dataset["y"], C=dataset.get("C", np.inf))
+    assert np.all(np.isclose(svdd.alphas_, dataset["alphas"]))
+    for cl, cent in svdd.center().items():
+        assert np.all(np.isclose(cent, dataset["center"][cl]))
+    assert svdd.support_vectors_ == dataset["SV"]
+    assert np.isclose(svdd.radius_, dataset["radius"])
+    assert np.isclose(svdd.aur(), dataset["aur"])
 
 
 @pytest.mark.skip(reason="no 2D-array input")
