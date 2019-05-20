@@ -296,5 +296,7 @@ class KernelMethod:
             the projection.
         """
         coords = [self.kernel(sample, v) / self.kernel(v, v) for v in base]
-        # TODO remove DeprecationWarning: Calling np.sum(generator)
-        return np.sum(coords[i] * base[i] for i in range(len(base)))
+        iter_sum = coords[0] * base[0]
+        for i in range(1, len(base)):
+            iter_sum = iter_sum + coords[i] * base[i]
+        return iter_sum
