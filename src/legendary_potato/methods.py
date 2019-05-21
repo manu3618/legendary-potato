@@ -251,20 +251,6 @@ class KernelMethod:
             for v in self.orthogonal(sample)
         ]
 
-    def fourier_serie(self, sample, base=None):
-        """Decompose  the sample on its fourier serie.
-
-        The Fourier serie is defined  as the projection onto an orthonormal
-        base. If none is provided, the base used is the one from
-        self.orthonormal.
-
-        No check on the sabe orthonormality is performed.
-        """
-        if base is None:
-            base = self.orthonormal(sample)
-        # TODO
-        raise NotImplementedError
-
     def projection(self, samples=None, base=None):
         """Perform projection of sample onto basis
 
