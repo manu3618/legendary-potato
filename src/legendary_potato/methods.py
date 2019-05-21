@@ -224,11 +224,11 @@ class KernelMethod:
 
             if any(
                 [
-                    np.isclose(self.distance(new_vect, newvect_proj), 0),
-                    np.isclose(self.distance(new_vect, new_vect), 0),
+                    np.any(np.isnan(new_vect)),
+                    np.isclose(self.kernel(new_vect, new_vect), 0),
                 ]
             ):
-                # new vector not free
+                # new vector null or invalid
                 continue
 
             base_vect.append(new_vect)

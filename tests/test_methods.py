@@ -146,4 +146,4 @@ def test_proj_run(sample):
     base = potato.orthonormal(list(sample[0]))
     for i in range(len(base)):
         coords = potato.projection([base[i]], base)
-        assert not np.isclose(coords[i], 0)
+        assert not np.isclose(coords[0][i], 0)
