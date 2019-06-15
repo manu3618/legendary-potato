@@ -1,14 +1,23 @@
+"""Command line tool to plot classifiers decision boundary on 2D samples.
+
+Usage:
+    $ python3 -m legendary_potato.graph [classifier]
+"""
+import argparse
 import random
 
 import numpy as np
 import pandas as pd
 
-from legenray_potat.classifiers import SVDD, SVM
+from legendary_potato.classifiers import SVDD, SVM
 
 
-def comparision_plot():
+def comparision_plot(classifiers=None):
     """Plot 2D decision lines for classifiers.
     """
+    if classifiers is None:
+        classifiers = ("SVDD",)
+
     # generate sample
     random.seed("legendary")
     samp_size = 100
@@ -34,9 +43,13 @@ def comparision_plot():
     spaces = np.linspace(-2, 2, 20)
     xv, yv = np.meshgrid(spaces, spaces)
     levels = {"SVDD": [0.8, 1, 1.2], "SVM": [-0.5, 0, 0.5]}
-    for classifier in ("SVDD", "SVM"):
+    for classifier in classifiers:
         pass
 
 
 if __name__ == "__main__":
-    comparision_plot()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("classifiers", nargs=-1, default=["SVM", "SVDD"])
+    args = parser.parse_args()
+
+    comparision_plot(classifiers=args.classifiers)
