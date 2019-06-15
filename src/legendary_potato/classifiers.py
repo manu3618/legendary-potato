@@ -439,3 +439,7 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
             self.roc().loc[:, ["false alarm", "sensitivity"]]
         ).transpose()
         return auc(x, y)
+
+
+class SVM(BaseEstimator, ClassifierMixin, KernelMethod):
+    pass
