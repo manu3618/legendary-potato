@@ -44,7 +44,7 @@ def comparision_plot(classifs=None):
     )
 
     # generate level line for each classifier
-    spaces = np.linspace(-2, 2, 20)
+    spaces = np.linspace(-2, 2, 50)
     xv, yv = np.meshgrid(spaces, spaces)
     levels = {"SVDD": [0.8, 1, 1.2], "SVM": [-0.5, 0, 0.5]}
     level_colors = {"SVDD": "purple", "SVM": "orange"}
@@ -62,6 +62,7 @@ def comparision_plot(classifs=None):
                     [[xv[row, col], yv[row, col]], ]
             )
 
+        # TODO:: specify levels
         # CS = ax.contour(xv, yv, zv, levels[classifier_name])
         CS = ax.contour(xv, yv, zv, colors=level_colors[classifier_name])
         ax.clabel(CS, inline=1)
@@ -74,4 +75,5 @@ if __name__ == "__main__":
     parser.add_argument("classifiers", nargs=-1, default=["SVM", "SVDD"])
     args = parser.parse_args()
 
-    comparision_plot(classifs=args.classifiers)
+    # comparision_plot(classifs=args.classifiers) # TODO
+    comparision_plot()
