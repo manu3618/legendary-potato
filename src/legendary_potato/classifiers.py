@@ -157,6 +157,11 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
         ret = np.sign(pred).reshape(-1)
         return list(map(lambda x: 1 if x == 0 else x, ret))
 
+    def decision_value(self, X):
+        """Generic decision value.
+        """
+        return self._dist_center(X)
+
     def _dist_center(self, X=None):
         """Compute ditance to class center.
 
