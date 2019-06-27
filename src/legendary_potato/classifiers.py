@@ -181,48 +181,44 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
         dim = len(self.alphas_)
         if X is None:
             # return distances for training set
-            square_dists = np.sqrt(
-                [
-                    np.power(self.kernel_matrix[i, i], 2)
-                    - 2
-                    * sum(
-                        self.alphas_[t] * self.kernel_matrix[i, t]
-                        for t in range(dim)
-                    )
-                    + np.power(
-                        sum(
-                            self.alphas_[t]
-                            * self.alphas_[s]
-                            * self.kernel_matrix[s, t]
-                            for s, t in product(range(dim), range(dim))
-                        ),
-                        2,
-                    )
-                    for i in range(dim)
-                ]
-            )
+            square_dists = [
+                np.power(self.kernel_matrix[i, i], 2)
+                - 2
+                * sum(
+                    self.alphas_[t] * self.kernel_matrix[i, t]
+                    for t in range(dim)
+                )
+                + np.power(
+                    sum(
+                        self.alphas_[t]
+                        * self.alphas_[s]
+                        * self.kernel_matrix[s, t]
+                        for s, t in product(range(dim), range(dim))
+                    ),
+                    2,
+                )
+                for i in range(dim)
+            ]
         else:
             # return distances for vector X
-            square_dists = np.sqrt(
-                [
-                    np.power(self.kernel(z, z), 2)
-                    - 2
-                    * sum(
-                        self.alphas_[t] * self.kernel(self.X_[t], z)
-                        for t in range(dim)
-                    )
-                    + np.power(
-                        sum(
-                            self.alphas_[s]
-                            * self.alphas_[t]
-                            * self.kernel(self.X_[t], self.X_[s])
-                            for s, t in product(range(dim), range(dim))
-                        ),
-                        2,
-                    )
-                    for z in X
-                ]
-            )
+            square_dists = [
+                np.power(self.kernel(z, z), 2)
+                - 2
+                * sum(
+                    self.alphas_[t] * self.kernel(self.X_[t], z)
+                    for t in range(dim)
+                )
+                + np.power(
+                    sum(
+                        self.alphas_[s]
+                        * self.alphas_[t]
+                        * self.kernel(self.X_[t], self.X_[s])
+                        for s, t in product(range(dim), range(dim))
+                    ),
+                    2,
+                )
+                for z in X
+            ]
 
         return np.sqrt(square_dists)
 
@@ -236,7 +232,7 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
         if y is None:
             y = self.y_
         dim = len(self.X_)
-        alphas = [0 for _ in range(dim)]
+        alphas = [1 / dim] * dim
         C = self.C
         upper = np.array([C for _ in range(dim)])
         one = np.array([1])
