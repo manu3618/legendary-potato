@@ -30,7 +30,7 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
 
     """
 
-    def __init__(self, kernel_matrix=None, kernel=None, C=None):
+    def __init__(self, kernel_matrix=None, kernel=None, C=1):
         """Initialize some parameters.
 
         Those parameters may be overwritten by the fit() method.
@@ -46,7 +46,7 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
         self.hypersphere_nb = 1
         self.trained_on_sample = True  # use directly kernel matrix or sample?
 
-    def fit(self, X, y=None, C=1, kernel=None, is_kernel_matrix=False):
+    def fit(self, X, y=None, C=None, kernel=None, is_kernel_matrix=False):
         """Fit the classifier.
 
         Args:
@@ -229,7 +229,7 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
         dim = len(self.X_)
         alphas = [1 / dim] * dim
         C = self.C
-        upper = np.array([C for _ in range(dim)])
+        upper = C*np.ones(dim)
         one = np.array([1])
 
         def ell_d(al):
