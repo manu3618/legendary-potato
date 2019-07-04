@@ -46,7 +46,7 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
         self.hypersphere_nb = 1
         self.trained_on_sample = True  # use directly kernel matrix or sample?
 
-    def fit(self, X, y=None, C=None, kernel=None, is_kernel_matrix=False):
+    def fit(self, X, y=None, C=1, kernel=None, is_kernel_matrix=False):
         """Fit the classifier.
 
         Args:
@@ -55,7 +55,7 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
                 same class (labeled "1").
             C (numeric): contraint in the soft margin case. If None or zero,
                 then fall back to hard margin case.
-            kernel (fun): kernel method to use.
+            kernel (fun): kernel method to use. (default: linear)
             is_kernel_matrix (bool): if True, the input is treated as
                 a kernel matrix.
 
