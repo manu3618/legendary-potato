@@ -188,14 +188,12 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
                     self.alphas_[t] * self.kernel_matrix[i, t]
                     for t in range(dim)
                 )
-                + np.power(
-                    sum(
-                        self.alphas_[t]
-                        * self.alphas_[s]
-                        * self.kernel_matrix[s, t]
-                        for s, t in product(range(dim), range(dim))
-                    ),
-                    2,
+                + sum(
+                    self.alphas_[t]
+                    * self.alphas_[s]
+                    * self.kernel_matrix[s, t]
+                    for s in range(dim)
+                    for t in range(dim)
                 )
                 for i in range(dim)
             ]
@@ -208,18 +206,15 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
                     self.alphas_[t] * self.kernel(self.X_[t], z)
                     for t in range(dim)
                 )
-                + np.power(
-                    sum(
-                        self.alphas_[s]
-                        * self.alphas_[t]
-                        * self.kernel(self.X_[t], self.X_[s])
-                        for s, t in product(range(dim), range(dim))
-                    ),
-                    2,
+                + sum(
+                    self.alphas_[s]
+                    * self.alphas_[t]
+                    * self.kernel(self.X_[t], self.X_[s])
+                    for s in range(dim)
+                    for t in range(dim)
                 )
                 for z in X
             ]
-
         return np.sqrt(square_dists)
 
     def _fit_one_hypersphere(self, y=None, class1=1, class2=-1):
