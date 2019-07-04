@@ -58,7 +58,7 @@ def comparision_plot(classifs=None):
         grid_shape = xv.shape
         zv = xv.copy()
         for row, col in product(range(grid_shape[0]), range(grid_shape[1])):
-            zv[row, col] = classifier.decision_value(
+            zv[row, col] = classifier.decision_function(
                     [[xv[row, col], yv[row, col]], ]
             )
 

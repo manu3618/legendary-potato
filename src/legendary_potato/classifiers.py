@@ -157,7 +157,7 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
         ret = np.sign(pred).reshape(-1)
         return list(map(lambda x: 1 if x == 0 else x, ret))
 
-    def decision_value(self, X):
+    def decision_function(self, X):
         """Generic decision value.
         """
         return self._dist_center(X)
@@ -182,7 +182,7 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
         if X is None:
             # return distances for training set
             square_dists = [
-                np.power(self.kernel_matrix[i, i], 2)
+                self.kernel_matrix[i, i]
                 - 2
                 * sum(
                     self.alphas_[t] * self.kernel_matrix[i, t]
@@ -202,7 +202,7 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
         else:
             # return distances for vector X
             square_dists = [
-                np.power(self.kernel(z, z), 2)
+                self.kernel(z, z)
                 - 2
                 * sum(
                     self.alphas_[t] * self.kernel(self.X_[t], z)
@@ -345,6 +345,7 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
         )
 
     def roc(self):
+        # TODO: make compatible  with sklearn.metrics.roc_curve
         """Compute Receiver Operating Characteristic curve.
 
         Returns
@@ -431,6 +432,7 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
             return {1: self._center_one_class(mapping)}
 
     def aur(self):
+        # TODO: make compatible  with sklearn.metrics.roc_curve
         """Compute AreaunderReceiver-operator curve.
 
         Returns:
