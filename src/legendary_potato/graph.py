@@ -13,7 +13,7 @@ import pandas as pd
 from legendary_potato import classifiers
 
 
-def comparision_plot(classifs=None):
+def comparision_plot(classifs=None, *args, **kwargs):
     """Plot 2D decision lines for classifiers.
     """
     if classifs is None:
@@ -44,30 +44,42 @@ def comparision_plot(classifs=None):
     )
 
     # generate level line for each classifier
-    spaces = np.linspace(-2, 2, 50)
-    xv, yv = np.meshgrid(spaces, spaces)
+    x_spaces = np.linspace(-3, 3, 50)
+    y_spaces = np.linspace(-1, 3, 50)
+    xv, yv = np.meshgrid(x_spaces, y_spaces)
     levels = {"SVDD": [0.8, 1, 1.2], "SVM": [-0.5, 0, 0.5]}
     level_colors = {"SVDD": "purple", "SVM": "orange"}
     for classifier_name in classifs:
 
         # train classifier
-        classifier = classifiers.__dict__[classifier_name]()
-        classifier.fit(df[["x1", "x2"]].to_numpy(), df["y"].to_numpy(), C=1)
+        classifier = classifiers.__dict__[classifier_name](*args, **kwargs)
+        classifier.fit(
+            X=df[["x1", "x2"]].to_numpy(),
+            y=df["y"].to_numpy(),
+            *args,
+            **kwargs
+        )
 
         # generate plot
         grid_shape = xv.shape
         zv = xv.copy()
         for row, col in product(range(grid_shape[0]), range(grid_shape[1])):
             zv[row, col] = classifier.decision_function(
-                    [[xv[row, col], yv[row, col]], ]
-            )
+                [[xv[row, col], yv[row, col]]]
+            )[0]
 
         # TODO:: specify levels
-        # CS = ax.contour(xv, yv, zv, levels[classifier_name])
-        CS = ax.contour(xv, yv, zv, colors=level_colors[classifier_name])
+        CS = ax.contour(
+            xv,
+            yv,
+            zv,
+            levels=levels[classifier_name],
+            colors=level_colors[classifier_name],
+            linestyles=["--", "-", "--"],
+        )
         ax.clabel(CS, inline=1)
 
-    return df
+    return df, classifier
 
 
 if __name__ == "__main__":
