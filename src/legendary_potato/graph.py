@@ -21,7 +21,7 @@ def comparision_plot(classifs=None, *args, **kwargs):
 
     # generate sample
     random.seed("legendary")
-    samp_size = 68
+    samp_size = 35
     X = [
         [random.normalvariate(-1, 0.5), random.normalvariate(1, 0.5)]
         for _ in range(samp_size)
