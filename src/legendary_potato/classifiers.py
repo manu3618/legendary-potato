@@ -160,7 +160,7 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
     def decision_function(self, X):
         """Generic decision value.
         """
-        return self._dist_center(X)
+        return self._dist_center(X) / self.radius_
 
     def _dist_center(self, X=None):
         """Compute ditance to class center.
@@ -229,7 +229,7 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
         dim = len(self.X_)
         alphas = [1 / dim] * dim
         C = self.C
-        upper = C*np.ones(dim)
+        upper = C * np.ones(dim)
         one = np.array([1])
 
         def ell_d(al):
@@ -237,11 +237,15 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
 
             function to maximize:
             .. maths::
-                \alpha diag(K)^T - \alpha K \alpha^T
+                L_D = \alpha diag(K)^T - \alpha K \alpha^T
+                L_D = \sum_s \alpha_s K<x_s, x_s>
+                      - \sum_s \sum_t \alpha_s \alpha_t K(x_s, x_t)
             """
             ay = al * y
-            return ay.dot(self.kernel_matrix).dot(ay.T) - ay.dot(
-                np.diag(self.kernel_matrix)
+
+            return -(
+                np.mat(ay).dot(np.diag(self.kernel_matrix))
+                - np.mat(ay).dot(self.kernel_matrix).dot(np.mat(ay).T)
             )
 
         cons = [
