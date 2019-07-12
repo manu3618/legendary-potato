@@ -139,7 +139,10 @@ def matrix_weighted_factory(matrix=None):
         (fun) kernel function
 
     """
-    if not np.all(np.isclose(matrix - matrix.transpose(), 0)):
+    if all(
+        matrix is not None,
+        not np.all(np.isclose(matrix - matrix.transpose(), 0)),
+    ):
         raise ValueError("input matrix not symmetric")
 
     def kernel(x1, x2):
