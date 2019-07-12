@@ -38,11 +38,11 @@ def normalize(kernel=np.dot, *args, **kwargs):
     return normalized_kernel
 
 
-def polynomial(kernel=np.dot, d=2, *args, **kwargs):
+def polynomial(kernel=np.dot, d=2, c=1, *args, **kwargs):
     """Return a polynomial kernel
 
     .. math::
-        K(x1, x2) = (k_0(x1, x2) + 1)^d
+        K(x1, x2) = (k_0(x1, x2) + c)^d
 
     Args:
         d (int): degree
@@ -52,7 +52,7 @@ def polynomial(kernel=np.dot, d=2, *args, **kwargs):
     """
 
     def poly(x1, x2, *args, **kwargs):
-        return (kernel(x1, x2, *args, **kwargs) + 1) ** d
+        return (kernel(x1, x2, *args, **kwargs) + c) ** d
 
     return poly
 
