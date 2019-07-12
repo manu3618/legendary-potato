@@ -7,7 +7,7 @@ Functions to create kernels from already existing kernels.
 import numpy as np
 
 
-def normalize(kernel, *args, **kwargs):
+def normalize(kernel=np.dot, *args, **kwargs):
     """Return the normalized version.
 
     This correspond to the new kernel
@@ -36,3 +36,40 @@ def normalize(kernel, *args, **kwargs):
             return kernel(x1, x2, *args, **kwargs) / denom
 
     return normalized_kernel
+
+
+def polynomial(kernel=np.dot, d=2, *args, **kwargs):
+    """Return a polynomial kernel
+
+    .. math::
+        K(x1, x2) = (k_0(x1, x2) + 1)^d
+
+    Args:
+        d (int): degree
+
+    Returns:
+        (fun) the kernel function.
+    """
+
+    def poly(x1, x2, *args, **kwargs):
+        return (kernel(x1, x2, *args, **kwargs) + 1) ** d
+
+    return poly
+
+
+def rbf(kernel=np.dot, gamma=1, *args, **kwargs):
+    """Return a radial basis kernel
+
+    .. math::
+        K(x1, x2) = exp(-\\frac({\\|x1, x2\\|^2}{\\gamma}))
+
+    Returns:
+        (fun) the kernel function.
+    """
+
+    def radial(x1, x2, *args, **kwargs):
+        return np.exp(
+            -(kernel(x1, x1) - 2 * kernel(x1, x2) + kernel(x2, x2)) / gamma
+        )
+
+    return radial
