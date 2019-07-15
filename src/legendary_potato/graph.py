@@ -7,19 +7,21 @@ import argparse
 import random
 from itertools import product
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from sklearn.metrics import auc, roc_curve
 
 from legendary_potato import classifiers
 
 
-def comparision_plot(classifs=None, *args, **kwargs):
-    """Plot 2D decision lines for classifiers.
-    """
-    if classifs is None:
-        classifs = ("SVDD",)
+def generate_dataset():
+    """Generate dataset.
 
-    # generate sample
+    Returns:
+
+        (pandas.DataFrame) 2D set with labels
+    """
     random.seed("legendary")
     samp_size = 35
     X = [
@@ -35,10 +37,20 @@ def comparision_plot(classifs=None, *args, **kwargs):
     X = np.array(X).transpose()
     Y = [1] * samp_size
     Y.extend([-1] * samp_size)
-    colors = {-1: "red", 1: "blue"}
     df = pd.DataFrame({"x1": X[0], "x2": X[1], "y": Y})
+    return df
+
+
+def comparision_plot(classifs=None, *args, **kwargs):
+    """Plot 2D decision lines for classifiers.
+    """
+    if classifs is None:
+        classifs = ("SVDD",)
+
+    df = generate_dataset()
 
     # plot sample
+    colors = {-1: "red", 1: "blue"}
     ax = df.plot(
         x="x1", y="x2", c=df["y"].apply(lambda x: colors[x]), kind="scatter"
     )
@@ -82,10 +94,47 @@ def comparision_plot(classifs=None, *args, **kwargs):
     return df, classifier
 
 
+def curve(classif=None, *args, **kwargs):
+    """Plot ROC curve.
+
+    Args:
+        classif: classifier
+        *args, **kwargs: extra arguments for the fit method
+    """
+    if classif is None:
+        classif = classifiers.SVDD()
+
+    df = generate_dataset()
+
+    model = classif
+    model.fit(
+        X=df[["x1", "x2"]].to_numpy(), y=df["y"].to_numpy(), *args, **kwargs
+    )
+    y_pred = 1 - model.decision_function(model.X_)
+    y_true = model.y_
+
+    fpr, tpr, _ = roc_curve(y_true, y_pred)
+    roc_auc = auc(fpr, tpr)
+
+    plt.figure()
+    plt.plot(
+        fpr, tpr, color="orange", label="ROC curve (area = %0.2f)" % roc_auc
+    )
+    plt.plot([0, 1], [0, 1], color="navy", linestyle="--")
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel("False Positive Rate")
+    plt.ylabel("True Positive Rate")
+    plt.title("Receiver operating characteristic")
+    plt.legend(loc="lower right")
+    plt.show()
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("classifiers", nargs=-1, default=["SVM", "SVDD"])
     args = parser.parse_args()
 
     # comparision_plot(classifs=args.classifiers) # TODO
-    comparision_plot()
+    df, classifier = comparision_plot()
+    curve()
