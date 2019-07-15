@@ -12,7 +12,6 @@ import numpy as np
 import pandas as pd
 from scipy.optimize import LinearConstraint, minimize
 from sklearn.base import BaseEstimator, ClassifierMixin
-from sklearn.metrics import auc, confusion_matrix
 from sklearn.utils.validation import check_is_fitted, check_X_y
 
 from .methods import KernelMethod
@@ -343,58 +342,6 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
             ]
         )
 
-    def roc(self):
-        # TODO: make compatible  with sklearn.metrics.roc_curve
-        """Compute Receiver Operating Characteristic curve.
-
-        Returns
-            (list) list of tuple (x,y) to plot the curve.
-        """
-        check_is_fitted(self, ["X_", "alphas_"])
-        ret = []
-
-        radiuses = self._dist_center()
-        min_interval = np.min(abs(radiuses[1:] - radiuses[:-1]))
-        decisions = np.hstack(
-            # [radiuses + min_interval, np.linspace(0, np.max(radiuses) + 1)]
-            [radiuses + min_interval, [0, np.max(radiuses) + 1]]
-        )
-        decisions.sort()
-
-        for radius in decisions:
-            y_pred = self._predict_one_hypersphere(
-                self.X_, decision_radius=self.radius_ * radius
-            )
-            tn, fp, fn, tp = confusion_matrix(
-                self.y_, y_pred, labels=[-1, 1]
-            ).ravel()
-
-            # tp + fn may be null
-            if fn == 0:
-                sensit = 1 if tp else 0
-            else:
-                sensit = tp / (tp + fn)
-
-            # fp + tn may be null
-            if fp == 0:
-                fp_rate = 0
-            else:
-                fp_rate = fp / (fp + tn)
-            ret.append(
-                {
-                    "sensitivity": sensit,
-                    "false alarm": fp_rate,
-                    "specificity": 1 - fp_rate,
-                    "tp": tp,
-                    "tn": tn,
-                    "fp": fp,
-                    "fn": fn,
-                    "decision radius": radius,
-                }
-            )
-
-        return pd.DataFrame(ret)
-
     def _center_one_class(self, mapping):
         """Compute hypersphere center.
 
@@ -429,18 +376,6 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
             }
         else:
             return {1: self._center_one_class(mapping)}
-
-    def aur(self):
-        # TODO: make compatible  with sklearn.metrics.roc_curve
-        """Compute AreaunderReceiver-operator curve.
-
-        Returns:
-            (float) area
-        """
-        x, y = np.array(
-            self.roc().loc[:, ["false alarm", "sensitivity"]]
-        ).transpose()
-        return auc(x, y)
 
 
 class SVM(BaseEstimator, ClassifierMixin, KernelMethod):
