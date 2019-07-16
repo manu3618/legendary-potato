@@ -392,6 +392,45 @@ class SVM(BaseEstimator, ClassifierMixin, KernelMethod):
             is_kernel_matrix (bool): if True, the input is treated as
                 a kernel matrix.
 
+        .. math::
+            \\begin{cases}
+                min_{\\alpha} & \\frac{1}{2} \\alpha^T K \\alpha - \\alpha^T ones \\\\
+                s.t           & 0 \\leq \\alpha_t < C \\forall t \\\\
+                              & (0 \\leq I alpha \\leq C I) \\\\
+                              & \\alpha^T diag(Y) = 0
+            \\end{cases}
+
+        The generic QP problem is
+
+        .. math::
+            \\begin{cases}
+                min_x   & \\frac{1}{2} x^T.P.x + q^T.x \\\\
+                s.t     & G.x \\leq h \\\\
+                        & A.x = b
+            \\end{cases}
+
+        In this SVM case:
+
+        .. math::
+            G = \\begin{pmatrix}
+                -1 & & & 1 & & \\\\
+                & \\ddots & & & \\ddots & \\\\
+                & & -1 & & & 1
+            \\end{pmatrix}
+
+        .. math::
+            h = \\begin{pmatrix}
+                0 \\\\ \\vdots \\\\ 0 \\\\ C \\\\ \\vdots \\\\ C
+            \\end{pmatrix}
+
+        .. math::
+            A = \\begin{pmatrix}
+                y_1 & \\hdots & y_n
+            \\end{pmatrix}
+
+        .. math::
+            b = 0
+
         """
         self._classifier_checks(X, y, C, kernel, is_kernel_matrix)
         # XXX
