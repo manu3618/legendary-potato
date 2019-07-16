@@ -158,6 +158,9 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
 
     def decision_function(self, X):
         """Generic decision value.
+
+        Args:
+            X (array-like): list of sample
         """
         return self._dist_center(X) / self.radius_
 
@@ -383,4 +386,66 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
 
 
 class SVM(BaseEstimator, ClassifierMixin, KernelMethod):
-    pass
+    """Implement Support Vector Machine
+
+    .. math::
+        \\begin{cases}
+            min_{w, w_0, \\xi} & \\frac{1}{2} \\|w\\|^2 - C \\sum_t \\xi_t \\\\
+            s.t            & y_t K(w, x_t) + w_0 > 1 -  \\xi_t  \\forall t \\\\
+                           & \\xi_t > 0  \\forall t \\\\
+        \\end{cases}
+    """
+
+    def __init__(self, kernel_matrix=None, kernel=np.dot, C=1):
+        self.kernel_matrix = kernel_matrix  # kernel matrix used for training
+        self.kernel = kernel
+        self.C = C
+        self.string_labels = False  # are labels strings or int?
+        self.trained_on_sample = True  # use directly kernel matrix or sample?
+
+    def fit(self, X, y=None, C=None, kernel=None, is_kernel_matrix=False):
+        """Fit the classifier.
+
+        Args:
+            X: training samples.
+            y: training labels. If None, consider all samples belongs to the
+                same class (labeled "1").
+            C (numeric): contraint in the soft margin case. If None or zero,
+                then fall back to hard margin case.
+            kernel (fun): kernel method to use. (default: linear)
+            is_kernel_matrix (bool): if True, the input is treated as
+                a kernel matrix.
+
+        """
+        if kernel is not None:
+            self.kernel = kernel
+        # TODO
+        pass
+
+    def predict(self, X, decision_value=0):
+        """Predict classes
+
+        Args:
+            X (array like): list of test samples.
+            decision_value (numeric): decision value
+        """
+        # TODO
+        pass
+
+    def fit_predict(self, X, y, C=1, kernel=None, is_kernel_matrix=False):
+        """Fit as the fit() methods.
+
+        Returns:
+            (array) : class for each training sample.
+        """
+        self.fit(X, y, C, kernel, is_kernel_matrix)
+        self.predict(X)
+
+    def decision_function(self, X):
+        """Generic decision value.
+
+        Args:
+            X (array-like): list of samples
+        """
+        # TODO
+        pass
