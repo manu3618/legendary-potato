@@ -392,6 +392,8 @@ class SVM(BaseEstimator, ClassifierMixin, KernelMethod):
             is_kernel_matrix (bool): if True, the input is treated as
                 a kernel matrix.
 
+        The optimisation problem is
+
         .. math::
             \\begin{cases}
                 min_{\\alpha} & \\frac{1}{2} \\alpha^T K \\alpha - \\alpha^T ones \\\\
@@ -433,7 +435,51 @@ class SVM(BaseEstimator, ClassifierMixin, KernelMethod):
 
         """
         self._classifier_checks(X, y, C, kernel, is_kernel_matrix)
-        # XXX
+        C = self.C
+        dim = len(self.X_)
+        self.y_ = np.sign(np.array(y) - 0.1)
+        alphas = [1 / dim] * dim  # warm start
+
+        # TODO test other solver
+        #
+        # G = np.hstack([-1 * np.identity(dim), np.identity(dim)])
+        # h = np.matrix(
+        #     np.hstack([np.zeros(dim), C * np.ones(dim)])
+        # ).transpose()
+        # A = np.matrix(self.y)
+
+        def ell_d(x):
+            """Function to minimize.
+            """
+            x = np.matrix(x).transpose()
+            return 1 / 2 * float(
+                x.transpose().dot(self.kernel_matrix).dot(x)
+            ) - float(np.ones(dim).dot(x))
+
+        cons = [
+            LinearConstraint(
+                A=np.identity(dim), lb=np.zeros(dim), ub=C * np.ones(dim)
+            ),
+            LinearConstraint(A=self.y_, lb=np.array([0]), ub=np.array([0])),
+        ]
+        predicted_alphas = minimize(
+            ell_d, alphas, constraints=cons, options={"maxiter": 10000}
+        )
+        if not predicted_alphas.success:
+            raise RuntimeError(predicted_alphas.message)
+        alphas = predicted_alphas.x
+
+        # nullify almost null alphas:
+        alphas = list(map(lambda x: 0 if np.isclose(x, 0) else x, alphas))
+
+        # support vectors: 0 < alphas <= C
+        support_vectors = set.intersection(
+            set(np.where(np.less_equal(alphas, C))[0]),
+            set(np.nonzero(alphas)[0]),
+        )
+        self.support_vectors_ = self.support_vectors_.union(support_vectors)
+
+        return np.array(alphas)
 
     def predict(self, X, decision_value=0):
         """Predict classes
