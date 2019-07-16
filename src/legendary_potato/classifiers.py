@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 from scipy.optimize import LinearConstraint, minimize
 from sklearn.base import BaseEstimator, ClassifierMixin
-from sklearn.utils.validation import check_is_fitted, check_X_y
+from sklearn.utils.validation import check_is_fitted
 
 from .methods import KernelMethod
 
@@ -22,10 +22,10 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
 
     .. math::
         \\begin{cases}
-            min_{r, c} & r^2 - C \sum_t \\xi_t \\\\
-            s.t        & y_i \| \phi(x_i) -c \| < r^2 + xi_i \\forall i \\\\
+            min_{r, c} & r^2 - C \\sum_t \\xi_t \\\\
+            s.t        & y_i \\| \\phi(x_i) -c \\| < r^2 + xi_i \\forall i \\\\
                        & \\xi_i > 0  \\forall i \\\\
-        \end{cases}
+        \\end{cases}
 
     """
 
@@ -60,31 +60,7 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
 
         """
         # X, y = check_X_y(X, y) # TODO: add check method for X
-        self.trained_on_sample = not is_kernel_matrix
-        n = len(X)
-        if y is None:
-            y = np.ones(n)
-        _, y = check_X_y(np.identity(n), y)
-        self.X_ = X
-        if C is not None:
-            self.C = C
-        if self.C is None:
-            self.C = np.inf
-        self.support_vectors_ = set()
-        if is_kernel_matrix:
-            self.kernel_matrix = X
-        else:
-            if self.kernel is None:
-                raise ValueError(
-                    "You must provide either a kernel function "
-                    "or a kernel matrix."
-                )
-            self.sample = self.X_
-            self.kernel_matrix = self.matrix()
-        self.classes_ = np.unique(y)
-
-        if np.isreal(y[0]):
-            self.string_labels = False
+        self._classifier_checks(X, y, C, kernel, is_kernel_matrix)
 
         if len(self.classes_) > 2 or (
             len(self.classes_) == 2 and self.string_labels
@@ -172,9 +148,9 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
 
         Distance to center:
         .. math::
-            \| z - c \|^2 = \|z\|^2 - 2 K(z, c) + \|c\|^2
+            \\| z - c \\|^2 = \\|z\\|^2 - 2 K(z, c) + \\|c\\|^2
 
-            c = \sum_t  \alpha_t \phi(X_t)
+            c = \\sum_t  \\alpha_t \\phi(X_t)
         """
         if not self.hypersphere_nb == 1:
             raise RuntimeWarning("Not available for multiclass SVDD")
@@ -243,9 +219,9 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
 
             function to maximize:
             .. maths::
-                L_D = \alpha diag(K)^T - \alpha K \alpha^T
-                L_D = \sum_s \alpha_s K<x_s, x_s>
-                      - \sum_s \sum_t \alpha_s \alpha_t K(x_s, x_t)
+                L_D = \\alpha diag(K)^T - \\alpha K \\alpha^T
+                L_D = \\sum_s \\alpha_s K<x_s, x_s>
+                      - \\sum_s \\sum_t \\alpha_s \\alpha_t K(x_s, x_t)
             """
             ay = al * y
 
@@ -417,10 +393,8 @@ class SVM(BaseEstimator, ClassifierMixin, KernelMethod):
                 a kernel matrix.
 
         """
-        if kernel is not None:
-            self.kernel = kernel
-        # TODO
-        pass
+        self._classifier_checks(X, y, C, kernel, is_kernel_matrix)
+        # XXX
 
     def predict(self, X, decision_value=0):
         """Predict classes

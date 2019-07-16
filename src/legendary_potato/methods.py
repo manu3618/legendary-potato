@@ -1,10 +1,11 @@
 # coding: utf-8
 """Utils for kernel methods."""
 
-from itertools import product
 from inspect import isgenerator
+from itertools import product
 
 import numpy as np
+from sklearn.utils.validation import check_X_y
 
 
 class KernelMethod:
@@ -46,6 +47,38 @@ class KernelMethod:
         if sample is None:
             sample = self.sample
         return sample
+
+    def _classifier_checks(self, X, y, C, kernel, is_kernel_matrix):
+        """Perform several checks for classifiers.
+        """
+        self.trained_on_sample = not is_kernel_matrix
+        n = len(X)
+        if y is None:
+            # one class
+            y = np.ones(n)
+        _, y = check_X_y(np.identity(n), y)
+        self.X_ = X
+        if C is not None:
+            self.C = C
+        if self.C is None:
+            self.C = np.inf
+        if kernel is not None:
+            self.kernel = kernel
+
+        self.support_vectors_ = set()
+        if is_kernel_matrix:
+            self.kernel_matrix = X
+        else:
+            if self.kernel is None:
+                raise ValueError(
+                    "You must provide a kernel function or a kernel matrix"
+                )
+            self.sample = self.X_
+            self.kernel_matrix = self.matrix()
+        self.classes_ = np.unique(y)
+
+        if np.isreal(y[0]):
+            self.string_labels = False
 
     def matrix(self, sample=None, ix=None):
         """Return the kernel matrix.
@@ -107,7 +140,7 @@ class KernelMethod:
         The distance is computed as
 
         .. math::
-            d(x_1, x_2) = \|x_1 - x_2 \|
+            d(x_1, x_2) = \\|x_1 - x_2 \\|
 
         Returns:
             (np.array) distance array, 1x1 array if a ingle scalar is expected.
@@ -176,8 +209,8 @@ class KernelMethod:
 
         .. math::
             cos(sample_0, sample_1) =
-            \\frac{\langle sample_0, sample_1 \\rangle}
-            {\|sample_0\| \|sample_1\|}
+            \\frac{\\langle sample_0, sample_1 \\rangle}
+            {\\|sample_0\\| \\|sample_1\\|}
 
         """
         if sample0 is not None and sample1 is not None:
@@ -198,10 +231,10 @@ class KernelMethod:
         """Return the orthongonal base from samples.
 
         For each sample :math:`s_{n}`, add to the list
-        :math:`v_{n} = s_{n} - \sum_{i<n} \langle s_{n}, v_i \\rangle v_i`
+        :math:`v_{n} = s_{n} - \\sum_{i<n} \\langle s_{n}, v_i \\rangle v_i`
 
         Returns:
-            (list) vectors :math:`\{v_i\}`.
+            (list) vectors :math:`\\{v_i\\}`.
         """
         sample = self._check_sample_arg(sample)
         if sample is None:
@@ -239,11 +272,11 @@ class KernelMethod:
         """Return the orthongonal base from samples.
 
         For each sample :math:`s_{n}`, compute
-        :math:`v_{n} = s_{n} - \sum_{i<n} \langle s_{n}, v_i \\rangle v_i`
-        and add to the list :math:`u_{n} = \\frac{v_{n}}{\|v_{n}\|}`
+        :math:`v_{n} = s_{n} - \\sum_{i<n} \\langle s_{n}, v_i \\rangle v_i`
+        and add to the list :math:`u_{n} = \\frac{v_{n}}{\\|v_{n}\\|}`
 
         Returns:
-            (list) vectors :math:`\{u_i\}`.
+            (list) vectors :math:`\\{u_i\\}`.
 
         """
         return [
