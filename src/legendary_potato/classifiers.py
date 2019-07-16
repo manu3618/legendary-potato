@@ -231,6 +231,10 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
         upper = C * np.ones(dim)
         one = np.array([1])
 
+        # TODO: test other solver
+        # https://pypi.org/project/quadprog/
+        # http://cvxopt.org/r
+
         def ell_d(al):
             """Dual function to minimize.
 
