@@ -217,7 +217,7 @@ def term_frequency(x1, x2, semantic=None, terms=None):
 
     semantic (2D array, pandas.DataFrame): semantic matrix
     terms (iterable of strings): terms. If None, they are extracted from
-        semantic matrix labels. If None, they areextracted from x1 and x2
+    semantic matrix labels. If None, they areextracted from x1 and x2
     """
     term1 = defaultdict(int, text_terms(x1))
     term2 = defaultdict(int, text_terms(x2))

@@ -102,7 +102,7 @@ def curve(classif=None, *args, **kwargs):
         *args, **kwargs: extra arguments for the fit method
     """
     if classif is None:
-        classif = classifiers.SVDD()
+        classif = classifiers.SVDD(*args, **kwargs)
 
     df = generate_dataset()
 
