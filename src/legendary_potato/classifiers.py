@@ -471,6 +471,7 @@ class SVM(BaseEstimator, ClassifierMixin, KernelMethod):
 
         # nullify almost null alphas:
         alphas = list(map(lambda x: 0 if np.isclose(x, 0) else x, alphas))
+        self.alphas_ = alphas
 
         # support vectors: 0 < alphas <= C
         support_vectors = set.intersection(
@@ -478,6 +479,19 @@ class SVM(BaseEstimator, ClassifierMixin, KernelMethod):
             set(np.nonzero(alphas)[0]),
         )
         self.support_vectors_ = self.support_vectors_.union(support_vectors)
+
+        self.w0 = np.mean(
+            [
+                1
+                - np.sum(
+                    [
+                        y[t] * alphas[t] * self.kernel_matrix[i, t]
+                        for t in range(dim)
+                    ]
+                )
+                for i in support_vectors
+            ]
+        )
 
         return np.array(alphas)
 
@@ -488,8 +502,22 @@ class SVM(BaseEstimator, ClassifierMixin, KernelMethod):
             X (array like): list of test samples.
             decision_value (numeric): decision value
         """
-        # TODO
-        pass
+        check_is_fitted(self, ["X_", "alphas_"])
+        if X is None:
+            X = self.X_
+        return [self._dist_hyperplane(x) for x in X]
+
+    def _dist_hyperplane(self, x):
+        check_is_fitted(self, ["X_", "alphas_"])
+        return (
+            sum(
+                [
+                    self.aplha_[i] * self.y_[i] * self.kernel(x, self.X_[i])
+                    for i in len(self.alphas_)
+                ]
+            )
+            + self.w0
+        )
 
     def fit_predict(self, X, y, C=1, kernel=None, is_kernel_matrix=False):
         """Fit as the fit() methods.
