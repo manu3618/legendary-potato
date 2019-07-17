@@ -3,7 +3,7 @@ from itertools import chain
 
 import numpy as np
 import pytest
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import auc, confusion_matrix, roc_curve
 from sklearn.model_selection import train_test_split
 from sklearn.utils.estimator_checks import check_estimator
 
@@ -49,10 +49,23 @@ def test_twoclasses(classifier, dataset):
     except RuntimeError as exn:
         pytest.skip("fit method did not work: %s" % exn)
     y_pred = classif.predict(X_test)
+    # tn, fp, fn, tp = confusion_matrix(y_test, y_pred, labels=[-1, 1]).ravel()
     confusion_matrix(y_test, y_pred)
-    aur = classif.aur()
-    assert aur <= 1
-    assert aur >= 0
+
+    if isinstance(classif, classifiers.SVDD):
+        y_pred = 1 - classif.decision_function(X_test)
+    elif isinstance(classif, classifiers.SVM):
+        y_pred = classif.decision_function(X_test)
+
+    fprs, tprs, _ = roc_curve(y_test, y_pred)
+
+    # checks on Area Under ROC curve
+    aur = auc(fprs, tprs)
+    if np.isnan(aur):
+        pass
+    else:
+        assert aur <= 1
+        assert aur >= 0
 
 
 @pytest.mark.parametrize("classifier", classifier_iterator())
@@ -166,7 +179,10 @@ def test_svdd_nonreg(dataset):
         assert np.all(np.isclose(cent, dataset["center"][cl]))
     assert svdd.support_vectors_ == dataset["SV"]
     assert np.isclose(svdd.radius_, dataset["radius"])
-    assert np.isclose(svdd.aur(), dataset["aur"])
+
+    y_pred = 1 - svdd.decision_function(svdd.X_)
+    fprs, tprs, _ = roc_curve(svdd.y_, y_pred)
+    assert np.isclose(svdd.auc(fprs, tprs), dataset["aur"])
 
 
 @pytest.mark.skip(reason="no 2D-array input")
