@@ -512,8 +512,8 @@ class SVM(BaseEstimator, ClassifierMixin, KernelMethod):
         return (
             sum(
                 [
-                    self.aplha_[i] * self.y_[i] * self.kernel(x, self.X_[i])
-                    for i in len(self.alphas_)
+                    self.alphas_[i] * self.y_[i] * self.kernel(x, self.X_[i])
+                    for i in range(len(self.alphas_))
                 ]
             )
             + self.w0
