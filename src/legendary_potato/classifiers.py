@@ -440,6 +440,11 @@ class SVM(BaseEstimator, ClassifierMixin, KernelMethod):
         self.y_ = np.sign(np.array(y) - 0.1)
         alphas = [1 / dim] * dim  # warm start
 
+        if len(set(self.y_)) < 2:
+            # One class SVM
+            # TODO
+            raise NotImplementedError("One class SVM not implemeted.")
+
         # TODO test other solver
         #
         # G = np.hstack([-1 * np.identity(dim), np.identity(dim)])
