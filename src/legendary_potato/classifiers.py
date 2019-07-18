@@ -372,9 +372,12 @@ class SVM(BaseEstimator, ClassifierMixin, KernelMethod):
         \\end{cases}
     """
 
-    def __init__(self, kernel_matrix=None, kernel=np.dot, C=1):
+    def __init__(self, kernel_matrix=None, kernel=None, C=1):
         self.kernel_matrix = kernel_matrix  # kernel matrix used for training
-        self.kernel = kernel
+        if kernel is None:
+            self.kernel = np.dot
+        else:
+            self.kernel = kernel
         self.C = C
         self.string_labels = False  # are labels strings or int?
         self.trained_on_sample = True  # use directly kernel matrix or sample?
