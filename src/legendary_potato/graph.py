@@ -45,7 +45,7 @@ def comparision_plot(classifs=None, *args, **kwargs):
     """Plot 2D decision lines for classifiers.
     """
     if classifs is None:
-        classifs = ("SVDD",)
+        classifs = ("SVDD", "SVM")
 
     df = generate_dataset()
 
@@ -59,7 +59,7 @@ def comparision_plot(classifs=None, *args, **kwargs):
     x_spaces = np.linspace(-3, 3, 50)
     y_spaces = np.linspace(-1, 3, 50)
     xv, yv = np.meshgrid(x_spaces, y_spaces)
-    levels = {"SVDD": [0.8, 1, 1.2], "SVM": [-0.5, 0, 0.5]}
+    levels = {"SVDD": [0.8, 1, 1.2], "SVM": [-1, 0, 1]}
     level_colors = {"SVDD": "purple", "SVM": "orange"}
     for classifier_name in classifs:
 
