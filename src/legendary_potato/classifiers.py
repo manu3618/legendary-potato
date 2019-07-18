@@ -434,16 +434,24 @@ class SVM(BaseEstimator, ClassifierMixin, KernelMethod):
             b = 0
 
         """
+
         self._classifier_checks(X, y, C, kernel, is_kernel_matrix)
-        C = self.C
-        dim = len(self.X_)
+        if isinstance(y[0], str):
+            raise NotImplementedError("String label not supported")
+
         self.y_ = np.sign(np.array(y) - 0.1)
-        alphas = [1 / dim] * dim  # warm start
 
         if len(set(self.y_)) < 2:
             # One class SVM
             # TODO
             raise NotImplementedError("One class SVM not implemeted.")
+
+        if len(set(self.y_)) > 2:
+            raise NotImplementedError("Multiclass SVM not implemented.")
+
+        return self._fit_two_classes(X, y, C, kernel, is_kernel_matrix)
+
+    def _fit_two_classes(self, X, y, C, kernel, is_kernel_matrix):
 
         # TODO test other solver
         #
@@ -452,11 +460,14 @@ class SVM(BaseEstimator, ClassifierMixin, KernelMethod):
         #     np.hstack([np.zeros(dim), C * np.ones(dim)])
         # ).transpose()
         # A = np.matrix(self.y)
+        C = self.C
+        dim = len(self.X_)
+        alphas = [1 / dim] * dim  # warm start
 
         def ell_d(x):
             """Function to minimize.
             """
-            x = np.matrix(x).transpose()
+            x = np.array(x).transpose()
             return 1 / 2 * float(
                 x.transpose().dot(self.kernel_matrix).dot(x)
             ) - float(np.ones(dim).dot(x))
@@ -510,7 +521,7 @@ class SVM(BaseEstimator, ClassifierMixin, KernelMethod):
         check_is_fitted(self, ["X_", "alphas_"])
         if X is None:
             X = self.X_
-        return [self._dist_hyperplane(x) for x in X]
+        return [np.sign(self._dist_hyperplane(x)) for x in X]
 
     def _dist_hyperplane(self, x):
         check_is_fitted(self, ["X_", "alphas_"])
@@ -539,5 +550,4 @@ class SVM(BaseEstimator, ClassifierMixin, KernelMethod):
         Args:
             X (array-like): list of samples
         """
-        # TODO
-        pass
+        return [self._dist_hyperplane(s) for s in X]
