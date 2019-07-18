@@ -59,7 +59,6 @@ def comparision_plot(classifs=None, *args, **kwargs):
     x_spaces = np.linspace(-3, 3, 50)
     y_spaces = np.linspace(-1, 3, 50)
     xv, yv = np.meshgrid(x_spaces, y_spaces)
-    levels = {"SVDD": [0.8, 1, 1.2], "SVM": [-1, 0, 1]}
     level_colors = {"SVDD": "purple", "SVM": "orange"}
     for classifier_name in classifs:
 
@@ -80,12 +79,10 @@ def comparision_plot(classifs=None, *args, **kwargs):
                 [[xv[row, col], yv[row, col]]]
             )[0]
 
-        # TODO:: specify levels
         CS = ax.contour(
             xv,
             yv,
             zv,
-            levels=levels[classifier_name],
             colors=level_colors[classifier_name],
             linestyles=["--", "-", "--"],
         )
