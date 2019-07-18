@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 from scipy.optimize import LinearConstraint, minimize
 from sklearn.base import BaseEstimator, ClassifierMixin
-from sklearn.utils.validation import check_is_fitted, check_X_y
+from sklearn.utils.validation import check_is_fitted
 
 from .methods import KernelMethod
 
@@ -22,10 +22,10 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
 
     .. math::
         \\begin{cases}
-            min_{r, c} & r^2 - C \sum_t \\xi_t \\\\
-            s.t        & y_i \| \phi(x_i) -c \| < r^2 + xi_i \\forall i \\\\
+            min_{r, c} & r^2 - C \\sum_t \\xi_t \\\\
+            s.t        & y_i \\| \\phi(x_i) -c \\| < r^2 + xi_i \\forall i \\\\
                        & \\xi_i > 0  \\forall i \\\\
-        \end{cases}
+        \\end{cases}
 
     """
 
@@ -60,31 +60,7 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
 
         """
         # X, y = check_X_y(X, y) # TODO: add check method for X
-        self.trained_on_sample = not is_kernel_matrix
-        n = len(X)
-        if y is None:
-            y = np.ones(n)
-        _, y = check_X_y(np.identity(n), y)
-        self.X_ = X
-        if C is not None:
-            self.C = C
-        if self.C is None:
-            self.C = np.inf
-        self.support_vectors_ = set()
-        if is_kernel_matrix:
-            self.kernel_matrix = X
-        else:
-            if self.kernel is None:
-                raise ValueError(
-                    "You must provide either a kernel function "
-                    "or a kernel matrix."
-                )
-            self.sample = self.X_
-            self.kernel_matrix = self.matrix()
-        self.classes_ = np.unique(y)
-
-        if np.isreal(y[0]):
-            self.string_labels = False
+        self._classifier_checks(X, y, C, kernel, is_kernel_matrix)
 
         if len(self.classes_) > 2 or (
             len(self.classes_) == 2 and self.string_labels
@@ -172,9 +148,9 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
 
         Distance to center:
         .. math::
-            \| z - c \|^2 = \|z\|^2 - 2 K(z, c) + \|c\|^2
+            \\| z - c \\|^2 = \\|z\\|^2 - 2 K(z, c) + \\|c\\|^2
 
-            c = \sum_t  \alpha_t \phi(X_t)
+            c = \\sum_t  \\alpha_t \\phi(X_t)
         """
         if not self.hypersphere_nb == 1:
             raise RuntimeWarning("Not available for multiclass SVDD")
@@ -243,9 +219,9 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
 
             function to maximize:
             .. maths::
-                L_D = \alpha diag(K)^T - \alpha K \alpha^T
-                L_D = \sum_s \alpha_s K<x_s, x_s>
-                      - \sum_s \sum_t \alpha_s \alpha_t K(x_s, x_t)
+                L_D = \\alpha diag(K)^T - \\alpha K \\alpha^T
+                L_D = \\sum_s \\alpha_s K<x_s, x_s>
+                      - \\sum_s \\sum_t \\alpha_s \\alpha_t K(x_s, x_t)
             """
             ay = al * y
 
@@ -396,9 +372,12 @@ class SVM(BaseEstimator, ClassifierMixin, KernelMethod):
         \\end{cases}
     """
 
-    def __init__(self, kernel_matrix=None, kernel=np.dot, C=1):
+    def __init__(self, kernel_matrix=None, kernel=None, C=1):
         self.kernel_matrix = kernel_matrix  # kernel matrix used for training
-        self.kernel = kernel
+        if kernel is None:
+            self.kernel = np.dot
+        else:
+            self.kernel = kernel
         self.C = C
         self.string_labels = False  # are labels strings or int?
         self.trained_on_sample = True  # use directly kernel matrix or sample?
@@ -416,11 +395,124 @@ class SVM(BaseEstimator, ClassifierMixin, KernelMethod):
             is_kernel_matrix (bool): if True, the input is treated as
                 a kernel matrix.
 
+        The optimisation problem is
+
+        .. math::
+            \\begin{cases}
+                min_{\\alpha} & \\frac{1}{2} \\alpha^T K \\alpha - \\alpha^T ones \\\\
+                s.t           & 0 \\leq \\alpha_t < C \\forall t \\\\
+                              & (0 \\leq I alpha \\leq C I) \\\\
+                              & \\alpha^T diag(Y) = 0
+            \\end{cases}
+
+        The generic QP problem is
+
+        .. math::
+            \\begin{cases}
+                min_x   & \\frac{1}{2} x^T.P.x + q^T.x \\\\
+                s.t     & G.x \\leq h \\\\
+                        & A.x = b
+            \\end{cases}
+
+        In this SVM case:
+
+        .. math::
+            G = \\begin{pmatrix}
+                -1 & & & 1 & & \\\\
+                & \\ddots & & & \\ddots & \\\\
+                & & -1 & & & 1
+            \\end{pmatrix}
+
+        .. math::
+            h = \\begin{pmatrix}
+                0 \\\\ \\vdots \\\\ 0 \\\\ C \\\\ \\vdots \\\\ C
+            \\end{pmatrix}
+
+        .. math::
+            A = \\begin{pmatrix}
+                y_1 & \\hdots & y_n
+            \\end{pmatrix}
+
+        .. math::
+            b = 0
+
         """
-        if kernel is not None:
-            self.kernel = kernel
-        # TODO
-        pass
+
+        self._classifier_checks(X, y, C, kernel, is_kernel_matrix)
+        if isinstance(y[0], str):
+            raise NotImplementedError("String label not supported")
+
+        self.y_ = np.sign(np.array(y) - 0.1)
+
+        if len(set(self.y_)) < 2:
+            # One class SVM
+            # TODO
+            raise NotImplementedError("One class SVM not implemeted.")
+
+        if len(set(self.y_)) > 2:
+            raise NotImplementedError("Multiclass SVM not implemented.")
+
+        return self._fit_two_classes(X, y, C, kernel, is_kernel_matrix)
+
+    def _fit_two_classes(self, X, y, C, kernel, is_kernel_matrix):
+
+        # TODO test other solver
+        #
+        # G = np.hstack([-1 * np.identity(dim), np.identity(dim)])
+        # h = np.matrix(
+        #     np.hstack([np.zeros(dim), C * np.ones(dim)])
+        # ).transpose()
+        # A = np.matrix(self.y)
+        C = self.C
+        dim = len(self.X_)
+        alphas = [1 / dim] * dim  # warm start
+
+        def ell_d(x):
+            """Function to minimize.
+            """
+            x = np.array(x).transpose()
+            return 1 / 2 * float(
+                x.transpose().dot(self.kernel_matrix).dot(x)
+            ) - float(np.ones(dim).dot(x))
+
+        cons = [
+            LinearConstraint(
+                A=np.identity(dim), lb=np.zeros(dim), ub=C * np.ones(dim)
+            ),
+            LinearConstraint(A=self.y_, lb=np.array([0]), ub=np.array([0])),
+        ]
+        predicted_alphas = minimize(
+            ell_d, alphas, constraints=cons, options={"maxiter": 10000}
+        )
+        if not predicted_alphas.success:
+            raise RuntimeError(predicted_alphas.message)
+        alphas = predicted_alphas.x
+
+        # nullify almost null alphas:
+        alphas = list(map(lambda x: 0 if np.isclose(x, 0) else x, alphas))
+        self.alphas_ = alphas
+
+        # support vectors: 0 < alphas <= C
+        support_vectors = set.intersection(
+            set(np.where(np.less_equal(alphas, C))[0]),
+            set(np.nonzero(alphas)[0]),
+        )
+        self.support_vectors_ = self.support_vectors_.union(support_vectors)
+
+        self.w0 = np.mean(
+            [
+                1
+                - np.sum(
+                    [
+                        y[t] * alphas[t] * self.kernel_matrix[i, t]
+                        for t in range(dim)
+                    ]
+                )
+                for i in support_vectors
+            ]
+        )
+
+        return np.array(alphas)
 
     def predict(self, X, decision_value=0):
         """Predict classes
@@ -429,8 +521,22 @@ class SVM(BaseEstimator, ClassifierMixin, KernelMethod):
             X (array like): list of test samples.
             decision_value (numeric): decision value
         """
-        # TODO
-        pass
+        check_is_fitted(self, ["X_", "alphas_"])
+        if X is None:
+            X = self.X_
+        return [np.sign(self._dist_hyperplane(x)) for x in X]
+
+    def _dist_hyperplane(self, x):
+        check_is_fitted(self, ["X_", "alphas_"])
+        return (
+            sum(
+                [
+                    self.alphas_[i] * self.y_[i] * self.kernel(x, self.X_[i])
+                    for i in range(len(self.alphas_))
+                ]
+            )
+            + self.w0
+        )
 
     def fit_predict(self, X, y, C=1, kernel=None, is_kernel_matrix=False):
         """Fit as the fit() methods.
@@ -447,5 +553,4 @@ class SVM(BaseEstimator, ClassifierMixin, KernelMethod):
         Args:
             X (array-like): list of samples
         """
-        # TODO
-        pass
+        return [self._dist_hyperplane(s) for s in X]

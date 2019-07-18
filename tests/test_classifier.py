@@ -15,7 +15,7 @@ from .common import multiclass_generator, two_class_generator
 def classifier_iterator():
     """Return an iterator over classifier.
     """
-    return (classifiers.SVDD,)
+    return (classifiers.SVDD, classifiers.SVM)
 
 
 @pytest.mark.parametrize("classifier", classifier_iterator())
