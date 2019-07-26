@@ -18,6 +18,34 @@ def classifier_iterator():
     return (classifiers.SVDD, classifiers.SVM)
 
 
+MULTICLASS_Y = [
+    {"labels": [0, 1, 2], "default": 0, "expected": [1, -1, -1]},
+    {"labels": [0, 1, 0], "expected": [-1, 1, -1]},
+    {"labels": [0, 1, 0], "default": "0", "expected": [1, -1, 1]},
+    {
+        "labels": list("legendarypotato"),
+        "default": "a",
+        "expected": [-1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, 1, -1, -1],
+    },
+    {
+        "labels": list("legendaryl"),
+        "expected": [1, -1, -1, -1, -1, -1, -1, -1, -1, 1],
+    },
+]
+
+
+@pytest.mark.parametrize("data", MULTICLASS_Y)
+def test_label_transformation(data):
+    """test multicall2onevsall
+    """
+    labels = data["labels"]
+    if "default" in data:
+        res = classifiers.multiclass2one_vs_all(labels, data["default"])
+    else:
+        res = classifiers.multiclass2one_vs_all(labels)
+    assert res == data["expected"]
+
+
 @pytest.mark.parametrize("classifier", classifier_iterator())
 @pytest.mark.parametrize("dataset", two_class_generator())
 def test_oneclass(classifier, dataset):

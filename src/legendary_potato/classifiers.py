@@ -6,6 +6,7 @@ Based on sklearn doc:
 "http://scikit-learn.org/dev/developers/contributing.html\
 #rolling-your-own-estimator"
 """
+import warnings
 from itertools import product
 
 import numpy as np
@@ -15,6 +16,21 @@ from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.utils.validation import check_is_fitted
 
 from .methods import KernelMethod
+
+
+def multiclass2one_vs_all(labels, first_class=1):
+    """Transform multiclas label to 2 class labels
+
+    Params:
+        labels (array-like): list of labels
+        first_class: label considered as not the rest
+
+    Returns:
+        (list) list of labels containing only 1/-1
+    """
+    if first_class not in labels:
+        first_class = labels[0]
+    return [1 if elt == first_class else -1 for elt in labels]
 
 
 class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
@@ -372,6 +388,9 @@ class SVM(BaseEstimator, ClassifierMixin, KernelMethod):
         \\end{cases}
     """
 
+    # TODO: multiclass: implement 1 set of alphas per class
+    # {class: [alphas], }
+
     def __init__(self, kernel_matrix=None, kernel=None, C=1):
         self.kernel_matrix = kernel_matrix  # kernel matrix used for training
         if kernel is None:
@@ -439,20 +458,29 @@ class SVM(BaseEstimator, ClassifierMixin, KernelMethod):
         """
 
         self._classifier_checks(X, y, C, kernel, is_kernel_matrix)
-        if isinstance(y[0], str):
-            raise NotImplementedError("String label not supported")
+        if len(self.classes_) > 2 or isinstance(y[0], str):
+            print(y)
+            msg = "Muticlass SVM not implemented. Label map used:\n"
+            self.y_ = multiclass2one_vs_all(y)
+            self._label_map = {}
+            for label in self.classes_:
+                idx = np.where([elt == label for elt in y])[0]
+                if idx.size > 0:
+                    self._label_map[label] = self.y_[idx[0]]
 
-        self.y_ = np.sign(np.array(y) - 0.1)
+            msg = msg + "\n".join(
+                ["{} --> {}".format(k, v) for k, v in self._label_map.items()]
+            )
+            warnings.warn(msg)
+
+        self.y_ = multiclass2one_vs_all(y)
 
         if len(set(self.y_)) < 2:
             # One class SVM
             # TODO
             raise NotImplementedError("One class SVM not implemeted.")
 
-        if len(set(self.y_)) > 2:
-            raise NotImplementedError("Multiclass SVM not implemented.")
-
-        return self._fit_two_classes(X, y, C, kernel, is_kernel_matrix)
+        return self._fit_two_classes(X, self.y_, C, kernel, is_kernel_matrix)
 
     def _fit_two_classes(self, X, y, C, kernel, is_kernel_matrix):
 
@@ -524,7 +552,22 @@ class SVM(BaseEstimator, ClassifierMixin, KernelMethod):
         check_is_fitted(self, ["X_", "alphas_"])
         if X is None:
             X = self.X_
-        return [np.sign(self._dist_hyperplane(x)) for x in X]
+
+        results = [np.sign(self._dist_hyperplane(x)) for x in X]
+
+        if hasattr(self, "_label_map"):
+            # TODO implement multiclass
+            default_label = next(
+                k for k, v in self._label_map.items() if v == 1
+            )
+            other_label = [
+                k for k in self._label_map.keys() if k != default_label
+            ]
+            return [
+                default_label if r == 1 else other_label[0] for r in results
+            ]
+
+        return results
 
     def _dist_hyperplane(self, x):
         check_is_fitted(self, ["X_", "alphas_"])
