@@ -144,7 +144,7 @@ SVDD_DATA = [
         "center": {1: [0, 0]},
         "SV": {1, 2},
         "radius": 1,
-        "aur": 1 / 6,
+        "aur": 1,
     },
     {
         "comment": "2 class non separable with dot kernel",
@@ -154,7 +154,7 @@ SVDD_DATA = [
         "center": {1: [0, 0]},
         "SV": {1, 2},
         "radius": 1,
-        "aur": 2 / 3,
+        "aur": 1 / 3,
     },
     {
         "comment": "2 class non separable with dot kernel, C specified",
@@ -165,7 +165,7 @@ SVDD_DATA = [
         "center": {1: [0, 2.5]},
         "SV": {1, 4},
         "radius": 2.25,
-        "aur": 0.5,
+        "aur": 9 / 16,
     },
 ]
 
@@ -182,7 +182,9 @@ def test_svdd_nonreg(dataset):
 
     y_pred = 1 - svdd.decision_function(svdd.X_)
     fprs, tprs, _ = roc_curve(svdd.y_, y_pred)
-    assert np.isclose(svdd.auc(fprs, tprs), dataset["aur"])
+    if dataset["aur"] != 0:
+        # auc is not NaN
+        assert np.isclose(auc(fprs, tprs), dataset["aur"])
 
 
 @pytest.mark.skip(reason="no 2D-array input")
