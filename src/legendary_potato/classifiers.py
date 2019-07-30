@@ -6,7 +6,6 @@ Based on sklearn doc:
 "http://scikit-learn.org/dev/developers/contributing.html\
 #rolling-your-own-estimator"
 """
-import warnings
 from itertools import product
 
 import numpy as np
@@ -458,23 +457,20 @@ class SVM(BaseEstimator, ClassifierMixin, KernelMethod):
         """
 
         self._classifier_checks(X, y, C, kernel, is_kernel_matrix)
+        self.y_ = y
         if len(self.classes_) > 2 or isinstance(y[0], str):
-            print(y)
-            msg = "Muticlass SVM not implemented. Label map used:\n"
-            self.y_ = multiclass2one_vs_all(y)
-            self._label_map = {}
+            self.individual_svm = {}
             for label in self.classes_:
-                idx = np.where([elt == label for elt in y])[0]
-                if idx.size > 0:
-                    self._label_map[label] = self.y_[idx[0]]
-
-            msg = msg + "\n".join(
-                ["{} --> {}".format(k, v) for k, v in self._label_map.items()]
-            )
-            warnings.warn(msg)
+                self.individual_svm[label] = self._fit_two_classes(
+                    X,
+                    multiclass2one_vs_all(y, label),
+                    C,
+                    kernel,
+                    is_kernel_matrix,
+                )
+            return self.individual_svm[self.y_[0]]
 
         self.y_ = multiclass2one_vs_all(y)
-
         if len(set(self.y_)) < 2:
             # One class SVM
             # TODO
@@ -507,7 +503,7 @@ class SVM(BaseEstimator, ClassifierMixin, KernelMethod):
             LinearConstraint(
                 A=np.identity(dim), lb=np.zeros(dim), ub=C * np.ones(dim)
             ),
-            LinearConstraint(A=self.y_, lb=np.array([0]), ub=np.array([0])),
+            LinearConstraint(A=y, lb=np.array([0]), ub=np.array([0])),
         ]
         predicted_alphas = minimize(
             ell_d, alphas, constraints=cons, options={"maxiter": 10000}
@@ -527,7 +523,7 @@ class SVM(BaseEstimator, ClassifierMixin, KernelMethod):
         )
         self.support_vectors_ = self.support_vectors_.union(support_vectors)
 
-        self.w0 = np.mean(
+        w0 = np.mean(
             [
                 1
                 - np.sum(
@@ -539,8 +535,9 @@ class SVM(BaseEstimator, ClassifierMixin, KernelMethod):
                 for i in support_vectors
             ]
         )
+        self.w0 = w0
 
-        return np.array(alphas)
+        return {"alphas": np.array(alphas), "w0": w0}
 
     def predict(self, X, decision_value=0):
         """Predict classes
@@ -552,34 +549,44 @@ class SVM(BaseEstimator, ClassifierMixin, KernelMethod):
         check_is_fitted(self, ["X_", "alphas_"])
         if X is None:
             X = self.X_
+        if hasattr(self, "individual_svm"):
+            # mmulticlass
+            results = self._dist_hyperplane_multiclass(X)
+            return results.transpose().idxmax()
 
-        results = [np.sign(self._dist_hyperplane(x)) for x in X]
+        else:
+            return [np.sign(self._dist_hyperplane(x)) for x in X]
 
-        if hasattr(self, "_label_map"):
-            # TODO implement multiclass
-            default_label = next(
-                k for k, v in self._label_map.items() if v == 1
-            )
-            other_label = [
-                k for k in self._label_map.keys() if k != default_label
-            ]
-            return [
-                default_label if r == 1 else other_label[0] for r in results
-            ]
+    def _dist_hyperplane(self, x, label=None):
+        if label is None:
+            # One hyperplane
+            check_is_fitted(self, ["X_", "alphas_"])
+            alphas = self.alphas_
+            y = self.y_
+            w0 = self.w0
+        else:
+            params = self.individual_svm[label]
+            alphas = params["alphas"]
+            w0 = params["w0"]
+            y = multiclass2one_vs_all(self.y_, label)
 
-        return results
-
-    def _dist_hyperplane(self, x):
-        check_is_fitted(self, ["X_", "alphas_"])
         return (
             sum(
                 [
-                    self.alphas_[i] * self.y_[i] * self.kernel(x, self.X_[i])
-                    for i in range(len(self.alphas_))
+                    alphas[i] * y[i] * self.kernel(x, self.X_[i])
+                    for i in range(len(alphas))
                 ]
             )
-            + self.w0
+            + w0
         )
+
+    def _dist_hyperplane_multiclass(self, X):
+
+        res = {
+            lab: [self._dist_hyperplane(x, lab) for x in X]
+            for lab, res in self.individual_svm.items()
+        }
+        return pd.DataFrame(res)
 
     def fit_predict(self, X, y, C=1, kernel=None, is_kernel_matrix=False):
         """Fit as the fit() methods.
