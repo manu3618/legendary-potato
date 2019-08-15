@@ -539,7 +539,7 @@ class SVM(BaseEstimator, ClassifierMixin, KernelMethod):
 
         return {"alphas": np.array(alphas), "w0": w0}
 
-    def predict(self, X, decision_value=0):
+    def predict(self, X=None, decision_value=0):
         """Predict classes
 
         Args:
