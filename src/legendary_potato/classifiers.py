@@ -1,4 +1,3 @@
-# coding: utf-8
 """
 Classifiers.
 
@@ -77,9 +76,7 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
         # X, y = check_X_y(X, y) # TODO: add check method for X
         self._classifier_checks(X, y, C, kernel, is_kernel_matrix)
 
-        if len(self.classes_) > 2 or (
-            len(self.classes_) == 2 and self.string_labels
-        ):
+        if len(self.classes_) > 2 or (len(self.classes_) == 2 and self.string_labels):
             # each class has its own hypersphere (one class vs rest)
             self.hypersphere_nb = len(self.classes_)
             self.individual_svdd = {}
@@ -177,14 +174,9 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
             square_dists = [
                 self.kernel_matrix[i, i]
                 - 2
-                * sum(
-                    self.alphas_[t] * self.kernel_matrix[i, t]
-                    for t in range(dim)
-                )
+                * sum(self.alphas_[t] * self.kernel_matrix[i, t] for t in range(dim))
                 + sum(
-                    self.alphas_[t]
-                    * self.alphas_[s]
-                    * self.kernel_matrix[s, t]
+                    self.alphas_[t] * self.alphas_[s] * self.kernel_matrix[s, t]
                     for s in range(dim)
                     for t in range(dim)
                 )
@@ -195,10 +187,7 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
             square_dists = [
                 self.kernel(z, z)
                 - 2
-                * sum(
-                    self.alphas_[t] * self.kernel(self.X_[t], z)
-                    for t in range(dim)
-                )
+                * sum(self.alphas_[t] * self.kernel(self.X_[t], z) for t in range(dim))
                 + sum(
                     self.alphas_[s]
                     * self.alphas_[t]
@@ -271,9 +260,7 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
         self.support_vectors_ = self.support_vectors_.union(support_vectors)
 
         if len(self.support_vectors_) < 2:
-            radius = np.min(
-                self.distance_matrix() + np.diag([C for _ in range(dim)])
-            )
+            radius = np.min(self.distance_matrix() + np.diag([C for _ in range(dim)]))
         else:
             # mean distance to support vectors
             radius = np.mean(
@@ -285,20 +272,17 @@ class SVDD(BaseEstimator, ClassifierMixin, KernelMethod):
         return radius, np.array(alphas)
 
     def dist_all_centers(self, X=None):
-        """Return distance to each class center.
-        """
+        """Return distance to each class center."""
         if self.hypersphere_nb > 1:
             dist_classes = {
-                cl: svdd._dist_center(X)
-                for cl, svdd in self.individual_svdd.items()
+                cl: svdd._dist_center(X) for cl, svdd in self.individual_svdd.items()
             }
         else:
             dist_classes = {1: self._dist_center(X)}
         return pd.DataFrame(dist_classes)
 
     def relative_dist_all_centers(self, X=None):
-        """Distane to all centers divided by class radius.
-        """
+        """Distane to all centers divided by class radius."""
         if self.hypersphere_nb > 1:
             dist_classes = {
                 cl: svdd._dist_center(X) / svdd.radius_
@@ -479,7 +463,6 @@ class SVM(BaseEstimator, ClassifierMixin, KernelMethod):
         return self._fit_two_classes(X, self.y_, C, kernel, is_kernel_matrix)
 
     def _fit_two_classes(self, X, y, C, kernel, is_kernel_matrix):
-
         # TODO test other solver
         #
         # G = np.hstack([-1 * np.identity(dim), np.identity(dim)])
@@ -492,17 +475,14 @@ class SVM(BaseEstimator, ClassifierMixin, KernelMethod):
         alphas = [1 / dim] * dim  # warm start
 
         def ell_d(x):
-            """Function to minimize.
-            """
+            """Function to minimize."""
             x = np.array(x).transpose()
-            return 1 / 2 * float(
-                x.transpose().dot(self.kernel_matrix).dot(x)
-            ) - float(np.ones(dim).dot(x))
+            return 1 / 2 * float(x.transpose().dot(self.kernel_matrix).dot(x)) - float(
+                np.ones(dim).dot(x)
+            )
 
         cons = [
-            LinearConstraint(
-                A=np.identity(dim), lb=np.zeros(dim), ub=C * np.ones(dim)
-            ),
+            LinearConstraint(A=np.identity(dim), lb=np.zeros(dim), ub=C * np.ones(dim)),
             LinearConstraint(A=y, lb=np.array([0]), ub=np.array([0])),
         ]
         predicted_alphas = minimize(
@@ -527,10 +507,7 @@ class SVM(BaseEstimator, ClassifierMixin, KernelMethod):
             [
                 1
                 - np.sum(
-                    [
-                        y[t] * alphas[t] * self.kernel_matrix[i, t]
-                        for t in range(dim)
-                    ]
+                    [y[t] * alphas[t] * self.kernel_matrix[i, t] for t in range(dim)]
                 )
                 for i in support_vectors
             ]
@@ -581,7 +558,6 @@ class SVM(BaseEstimator, ClassifierMixin, KernelMethod):
         )
 
     def _dist_hyperplane_multiclass(self, X):
-
         res = {
             lab: [self._dist_hyperplane(x, lab) for x in X]
             for lab, res in self.individual_svm.items()
