@@ -1,4 +1,3 @@
-# coding: utf-8
 """Utils for kernel methods."""
 
 from inspect import isgenerator
@@ -49,8 +48,7 @@ class KernelMethod:
         return sample
 
     def _classifier_checks(self, X, y, C, kernel, is_kernel_matrix):
-        """Perform several checks for classifiers.
-        """
+        """Perform several checks for classifiers."""
         self.trained_on_sample = not is_kernel_matrix
         n = len(X)
         if y is None:
@@ -121,11 +119,8 @@ class KernelMethod:
         return kernel_matrix
 
     def _square_dist(self, s0, s1):
-        """Used by distance.
-        """
-        return (
-            self.kernel(s0, s0) + self.kernel(s1, s1) - 2 * self.kernel(s0, s1)
-        )
+        """Used by distance."""
+        return self.kernel(s0, s0) + self.kernel(s1, s1) - 2 * self.kernel(s0, s1)
 
     def distance(self, sample0=None, sample1=None):
         """Compute squarenorm.
@@ -150,8 +145,7 @@ class KernelMethod:
             return np.array(np.sqrt(self._square_dist(sample0, sample1)))
         elif sample0 is None and sample1 is not None:
             return np.array(
-                np.sqrt(self._square_dist(ele, sample1))
-                for ele in self._sample
+                np.sqrt(self._square_dist(ele, sample1)) for ele in self._sample
             )
         elif sample1 is None:
             if sample0 is not None:
@@ -179,16 +173,14 @@ class KernelMethod:
         gram_mat = self.matrix(sample)
         mshape = gram_mat.shape
         dist_mat = gram_mat.copy()
-        for (s, t) in product(range(mshape[0]), range(mshape[1])):
+        for s, t in product(range(mshape[0]), range(mshape[1])):
             dist_mat[s, t] = np.sqrt(
                 gram_mat[s, s] - 2 * gram_mat[s, t] + gram_mat[t, t]
             )
         return dist_mat
 
     def _cosine(self, s1, s2):
-        """Used by cosine.
-
-        """
+        """Used by cosine."""
         num = self.kernel(s1, s2)
         denom = np.sqrt(self.kernel(s1, s1)) * np.sqrt(self.kernel(s2, s2))
         if num == 0:

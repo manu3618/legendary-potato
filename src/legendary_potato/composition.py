@@ -1,4 +1,3 @@
-# coding: utf-8
 """
 Functions to create kernels from already existing kernels.
 
@@ -13,12 +12,12 @@ def normalize(kernel=np.dot, *args, **kwargs):
     This correspond to the new kernel
 
     .. math::
-        K(x_1, x_2) = \\frac{k_0(x_1, x2)}{\sqrt(k_0(x_1, x_1) k_0(x_2, x_2))}
+        K(x_1, x_2) = \\frac{k_0(x_1, x2)}{\\sqrt(k_0(x_1, x_1) k_0(x_2, x_2))}
 
     This is equivalent to normalize the feature map:
 
     .. math::
-        \Phi(x) = \\frac{\phi(x)}{\|\phi(x)\|}
+        \\Phi(x) = \\frac{\\phi(x)}{\\|\\phi(x)\\|}
 
     Returns:
         (fun) the kernel function.
@@ -68,8 +67,6 @@ def rbf(kernel=np.dot, gamma=1, *args, **kwargs):
     """
 
     def radial(x1, x2, *args, **kwargs):
-        return np.exp(
-            -(kernel(x1, x1) - 2 * kernel(x1, x2) + kernel(x2, x2)) / gamma
-        )
+        return np.exp(-(kernel(x1, x1) - 2 * kernel(x1, x2) + kernel(x2, x2)) / gamma)
 
     return radial

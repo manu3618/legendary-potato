@@ -28,12 +28,7 @@ def generate_dataset():
         [random.normalvariate(-1, 0.5), random.normalvariate(1, 0.5)]
         for _ in range(samp_size)
     ]
-    X.extend(
-        [
-            [random.uniform(-1, 2), random.uniform(0, 1)]
-            for _ in range(samp_size)
-        ]
-    )
+    X.extend([[random.uniform(-1, 2), random.uniform(0, 1)] for _ in range(samp_size)])
     X = np.array(X).transpose()
     Y = [1] * samp_size
     Y.extend([-1] * samp_size)
@@ -42,8 +37,7 @@ def generate_dataset():
 
 
 def comparision_plot(classifs=None, *args, **kwargs):
-    """Plot 2D decision lines for classifiers.
-    """
+    """Plot 2D decision lines for classifiers."""
     if classifs is None:
         classifs = ("SVDD", "SVM")
 
@@ -51,9 +45,7 @@ def comparision_plot(classifs=None, *args, **kwargs):
 
     # plot sample
     colors = {-1: "red", 1: "blue"}
-    ax = df.plot(
-        x="x1", y="x2", c=df["y"].apply(lambda x: colors[x]), kind="scatter"
-    )
+    ax = df.plot(x="x1", y="x2", c=df["y"].apply(lambda x: colors[x]), kind="scatter")
 
     # generate level line for each classifier
     x_spaces = np.linspace(-3, 3, 50)
@@ -61,23 +53,19 @@ def comparision_plot(classifs=None, *args, **kwargs):
     xv, yv = np.meshgrid(x_spaces, y_spaces)
     level_colors = {"SVDD": "purple", "SVM": "orange"}
     for classifier_name in classifs:
-
         # train classifier
         classifier = classifiers.__dict__[classifier_name](*args, **kwargs)
         classifier.fit(
-            X=df[["x1", "x2"]].to_numpy(),
-            y=df["y"].to_numpy(),
-            *args,
-            **kwargs
+            X=df[["x1", "x2"]].to_numpy(), y=df["y"].to_numpy(), *args, **kwargs
         )
 
         # generate plot
         grid_shape = xv.shape
         zv = xv.copy()
         for row, col in product(range(grid_shape[0]), range(grid_shape[1])):
-            zv[row, col] = classifier.decision_function(
-                [[xv[row, col], yv[row, col]]]
-            )[0]
+            zv[row, col] = classifier.decision_function([[xv[row, col], yv[row, col]]])[
+                0
+            ]
 
         CS = ax.contour(
             xv,
@@ -104,9 +92,7 @@ def curve(classif=None, *args, **kwargs):
     df = generate_dataset()
 
     model = classif
-    model.fit(
-        X=df[["x1", "x2"]].to_numpy(), y=df["y"].to_numpy(), *args, **kwargs
-    )
+    model.fit(X=df[["x1", "x2"]].to_numpy(), y=df["y"].to_numpy(), *args, **kwargs)
     y_pred = 1 - model.decision_function(model.X_)
     y_true = model.y_
 
@@ -114,9 +100,7 @@ def curve(classif=None, *args, **kwargs):
     roc_auc = auc(fpr, tpr)
 
     plt.figure()
-    plt.plot(
-        fpr, tpr, color="orange", label="ROC curve (area = %0.2f)" % roc_auc
-    )
+    plt.plot(fpr, tpr, color="orange", label="ROC curve (area = %0.2f)" % roc_auc)
     plt.plot([0, 1], [0, 1], color="navy", linestyle="--")
     plt.xlim([0.0, 1.0])
     plt.ylim([0.0, 1.05])

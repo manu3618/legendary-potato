@@ -1,4 +1,3 @@
-# coding: utf-8
 "Generic kernels."
 
 from calendar import monthrange
@@ -65,8 +64,7 @@ def periodic_map(x, period=2 * np.pi):
 
 
 def periodic(x1, x2, period=2 * np.pi):
-    """Kernel based on periodic map.
-    """
+    """Kernel based on periodic map."""
     return from_feature_map(periodic_map, period)(x1, x2)
 
 
@@ -107,8 +105,7 @@ def temporal_map(ts):
 
 
 def temporal(ts1, ts2):
-    """Kernel based on temporal map.
-    """
+    """Kernel based on temporal map."""
     return from_feature_map(temporal_map)(ts1, ts2)
 
 
@@ -121,9 +118,7 @@ def l2(f1, f2, interval=(-1, 1)):
         K(f_1, f_2) = \int_{interval} f_1(x) f_2(x) dx
 
     """
-    return scipy.integrate.quad(
-        lambda x: f1(x) * f2(x), interval[0], interval[1]
-    )[0]
+    return scipy.integrate.quad(lambda x: f1(x) * f2(x), interval[0], interval[1])[0]
 
 
 def matrix_weighted_factory(matrix=None):
@@ -186,12 +181,8 @@ def p_spectrum(x1, x2, p=2):
     """
     if p == 0:
         return 0
-    s1 = Counter(
-        "".join(seq) for seq in zip(x1[i : i + p] for i in range(len(x1)))
-    )
-    s2 = Counter(
-        "".join(seq) for seq in zip(x2[i : i + p] for i in range(len(x2)))
-    )
+    s1 = Counter("".join(seq) for seq in zip(x1[i : i + p] for i in range(len(x1))))
+    s2 = Counter("".join(seq) for seq in zip(x2[i : i + p] for i in range(len(x2))))
     return sum(s1[seq] * s2[seq] for seq in s1 if len(seq) == p)
 
 
@@ -204,8 +195,7 @@ def all_subsequences(x1, x2):
 
 
 def text_terms(text):
-    """Extract terms from text.
-    """
+    """Extract terms from text."""
     text_list = (term.lower().strip("',.?!:/*+-()") for term in text.split())
     return Counter(text_list)
 
